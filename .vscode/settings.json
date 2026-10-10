@@ -1,4 +1,5 @@
 {
     "files.encoding": "gb2312",
-    "C_Cpp.default.compilerPath": "c:\\Keil_v5\\UV4\\UV4.exe"
+    "C_Cpp.default.compilerPath": "c:\\Keil_v5\\UV4\\UV4.exe",
+    "markdown.validate.enabled": true
 }
