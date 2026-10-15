@@ -1,6 +1,5 @@
 #include "stm32f4xx.h"                  // Device header
 #include "Emm_V5.h"
-#include "Delay.h"
 #include "delay.h"
 #include "OLED.h"
 #include "math.h"
@@ -8,7 +7,6 @@
 int  car_move_speed = 50;
 int  a1 = 70;
 int  a  = 230;
-static float pingtui_distance = 0.0f;
 static float current_pos = 0.0f; 
 static float current_pos1 = 0.0f;  //升降的位置
 double car_move_delay(float distance,uint16_t a_of_car,uint16_t speed_of_car,uint8_t direct);
@@ -16,6 +14,10 @@ double shengjiang_move_delay(float quanshu,uint16_t a,uint16_t speed);
 void change_A(int a_in);
 void change_SNA1(int a,int speed);
 
+/**
+ * @brief 将底盘平移与旋转分量换算为四个电机的速度命令并经 CAN 下发。
+ * @note 函数在发送电机命令之间使用短延时，不应从中断服务程序调用。
+ */
 void car_move(int v_x,int v_y,int w)
 {
 	int speed[5];
@@ -61,7 +63,7 @@ void car_move_distance_x(float x)
 	int speed[5];
 	int dt=5;
 	int v_x;
-	int quanshu = ABS(x)*10.5; //实际的转动圈数
+	int quanshu = (double)ABS(x) * 10.5; //实际的转动圈数
     v_x = car_move_speed*x/ABS(x);
 	speed[1] = +v_x ;
 	speed[2] = -v_x ;
@@ -104,7 +106,7 @@ void car_move_distance_y(float y)
 	int speed[5];
 	int dt=5;
 	int v_y;
-	int quanshu = ABS(y)*10.3; //实际的转动圈数
+	int quanshu = (double)ABS(y) * 10.3; //实际的转动圈数
     v_y = car_move_speed*y/ABS(y);
 	speed[1] = v_y;
 	speed[2] = v_y;
@@ -176,6 +178,13 @@ void car_move4(float x,float y,int a_in,int car_speed)
 }
 
 
+/**
+ * @brief 将升降轴移动到目标坐标，并返回供上层等待使用的估算时长。
+ * @param target_pos 升降轴目标坐标，当前实现限制在 0~135。
+ * @param speed 电机速度参数；@p accel 为电机加速度参数。
+ * @return 估算等待时间，单位 ms。
+ * @note 越界时当前实现会停留在错误处理循环中。
+ */
 double shengjiang_control(int target_pos, uint16_t speed, uint8_t accel)
 {   
 	if(target_pos >=135.0f){
@@ -237,6 +246,7 @@ double pingtui_control(float target_pos, uint16_t speed, uint8_t accel)
 	return shengjiang_move_delay(1.0f*pulses, accel, speed);
 }
 
+/** @brief 命令平推轴回到程序坐标零位。 */
 void pingtui_reset(void)
 {   
 	pingtui_control(0.0f,1000,200);
@@ -254,9 +264,9 @@ double car_move_delay(float distance,uint16_t a_of_car,uint16_t speed_of_car,uin
 	if(a_of_car == 0){a_of_car = 256;}
 	double quanshu = 0;
 	if(direct == 0){
-		quanshu = ABS(distance) * 10.5;
+		quanshu = (double)ABS(distance) * 10.5;
 	}else{
-		quanshu = ABS(distance) * 10.3;
+		quanshu = (double)ABS(distance) * 10.3;
 	}
 	double quanshu_fenjie = 320 * pow(speed_of_car,2)/(a_of_car * 6);
 	double time_fenjie = 2000*speed_of_car/a_of_car;

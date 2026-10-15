@@ -1,0 +1,17 @@
+# Keil build outputs
+/OBJ/*.o
+/OBJ/*.d
+/OBJ/*.crf
+/OBJ/*.axf
+/OBJ/*.map
+/OBJ/*.lnp
+/OBJ/*.lst
+/OBJ/*.htm
+/OBJ/*.dep
+/OBJ/Template.sct
+/OBJ/Template_sct.Bak
+
+# Local IDE state and machine-specific settings
+/USER/Template.uvoptx
+/USER/Template.uvguix.*
+/USER/.vscode/

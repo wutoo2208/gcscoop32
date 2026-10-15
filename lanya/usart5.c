@@ -14,6 +14,7 @@ u16 USART5_RX_STA=0;
 int i;
 char test[10];
 
+/** @brief 初始化 UART5 蓝牙通信接口及接收中断；bound 为波特率，单位 bit/s。 */
 void uart5_init(u32 bound)
 {  	 
 	GPIO_InitTypeDef GPIO_InitStructure;
@@ -141,6 +142,7 @@ void UART5_IRQHandler(void)
 }
 
 
+/** @brief 通过 UART5 发送以 NUL 结尾的字符串；轮询 TXE，调用会阻塞。 */
 void UART5_SendString(char *str) 
 {
 	while (*str != '\0') {
@@ -177,6 +179,7 @@ void find_congji()
 }
 
 
+/** @brief 通过 USART1 发送固定任务码示例，并先发送 0x72 通知字节。 */
 void fasong_task_code(void)
 {
 	Serial_SendByte(0x72);

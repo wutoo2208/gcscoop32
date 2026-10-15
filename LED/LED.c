@@ -2,6 +2,7 @@
 
 void LED_Toggle(void);
 
+/** @brief 初始化 PF9、PF10 和 PA8 指示灯 GPIO，并执行一次双灯翻转。 */
 void LED_Init(void)
 {
     RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOF, ENABLE);
@@ -25,22 +26,26 @@ void LED_Init(void)
 }
 
 
+/** @brief 翻转 GPIOF 的 PF9 指示灯输出。 */
 void LED_Toggle0(void)
 {
 	GPIO_ToggleBits(GPIOF,GPIO_Pin_9);
 }
 
+/** @brief 翻转 GPIOF 的 PF10 指示灯输出。 */
 void LED_Toggle1(void)
 {
 	GPIO_ToggleBits(GPIOF,GPIO_Pin_10);
 }
 
+/** @brief 同时翻转 GPIOF 的 PF9 和 PF10 输出。 */
 void LED_Toggle(void)
 {
 	GPIO_ToggleBits(GPIOF,GPIO_Pin_9);
 	GPIO_ToggleBits(GPIOF,GPIO_Pin_10);
 }
 
+/** @brief 翻转 GPIOA 的 PA8 指示灯输出。 */
 void LED_Toggle2(void)
 {
 	GPIO_ToggleBits(GPIOA,GPIO_Pin_8);

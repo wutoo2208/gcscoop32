@@ -1,6 +1,7 @@
 #ifndef __SEVRVO_H
 #define __SEVRVO_H
 
+/** @brief 初始化舵机控制所需的底层 PWM 定时器和输出通道。 */
 void Servo_Init(void);
 
 //机械抓手

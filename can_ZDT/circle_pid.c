@@ -32,6 +32,7 @@ PID mypid = {0}; //创建一个PID结构体变量
 void Time_Init();
 void Clear_Init();
 
+/** @brief 设置 PID 比例、积分、微分系数及积分/输出限幅。 */
 void PID_Init(PID *pid, float p, float i, float d, float maxI, float maxOut)
 {
     pid->kp = p;
@@ -79,12 +80,14 @@ void PID_Calc(PID *pid, float reference, float feedback)
     else if(pid->output < -pid->maxOutput) pid->output = -pid->maxOutput;
 }
  
+/** @brief 初始化本文件使用的 TIM4 周期控制基础和默认 PID 参数。 */
 void PIDInit(void)
 {
 	Time_Init();
     PID_Init(&mypid, 1.5, 0.001, 2, 2, 60); //初始化PID参数
 }
 
+/** @brief 更新 PID 运动任务的平移/旋转分量、持续时间和目标角度。 */
 void PID_DIL(int v_x,int v_y,int w,uint32_t time,int target)
 {   
 	vx = v_x;
@@ -95,6 +98,11 @@ void PID_DIL(int v_x,int v_y,int w,uint32_t time,int target)
 	targetValue = target;
 }
 
+/**
+ * @brief 配置 PID 参数并等待定时控制任务完成一次运动。
+ * @note 当前实现通过共享标志忙等，调用会阻塞且没有超时保护。
+ * @return 当前实现完成后返回 1。
+ */
 uint8_t PID_move(int v_x,int v_y,int w,uint32_t time,int target,int pid_choose)
 {   
 	flag = 0; //运动标志位归零
@@ -136,6 +144,7 @@ void car_move_distance(float x,float y)
 	PID_control_flag = 0;
 }
 
+/** @brief 配置本文件 PID 控制使用的 TIM4 更新中断。 */
 void Time_Init()
 {
     /*开启时钟*/

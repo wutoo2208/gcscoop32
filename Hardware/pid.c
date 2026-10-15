@@ -34,9 +34,9 @@ typedef struct
 }PID;
 PID mypid = {0}; //创建一个PID结构体变量
 
-void Time_Init();
-void Clear_Init();
+void Time_Init(void);
 
+/** @brief 设置 PID 系数以及积分项和输出项的限幅。 */
 void PID_Init(PID *pid, float p, float i, float d, float maxI, float maxOut)
 {
     pid->kp = p;
@@ -84,12 +84,14 @@ void PID_Calc(PID *pid, float reference, float feedback)
     else if(pid->output < -pid->maxOutput) pid->output = -pid->maxOutput;
 }
  
+/** @brief 初始化 TIM4 控制定时器并装载默认 PID 参数。 */
 void PIDInit(void)
 {
 	Time_Init();
     PID_Init(&mypid, 1.5, 0.001, 2, 7, 180); //初始化PID参数
 }
 
+/** @brief 写入底盘运动分量、控制时长（ms）和目标航向角，供 TIM4 控制周期读取。 */
 void PID_DIL(int v_x,int v_y,int w,uint32_t time,float target)
 {   
 	vx = v_x;
@@ -100,6 +102,12 @@ void PID_DIL(int v_x,int v_y,int w,uint32_t time,float target)
 	targetValue = target;
 }
 
+/**
+ * @brief 选择 PID 参数组并执行定时闭环运动。
+ * @param time 运动控制时长，单位 ms；@p target 为目标航向角。
+ * @note 函数等待中断设置完成标志，属于阻塞调用且当前无超时保护；不可在中断中调用。
+ * @return 当前实现完成后返回 1。
+ */
 uint8_t PID_move(int v_x,int v_y,int w,uint32_t time,float target,int pid_choose)
 {   
 	TIM_Cmd(TIM4, ENABLE); // 使能TIM4，定时器开始运行
@@ -142,6 +150,7 @@ uint8_t PID_move(int v_x,int v_y,int w,uint32_t time,float target,int pid_choose
 	return 1;
 }
 
+/** @brief 设置一组 PID 参数并启动定时闭环运动，不在本函数内等待完成。 */
 void PID_move1(int v_x,int v_y,int w,uint32_t time,int target,int pid_choose)
 {   
 	TIM_Cmd(TIM4, ENABLE); // 使能TIM4，定时器开始运行
@@ -219,7 +228,8 @@ void PID_car_move_distance(float x,float y,float angel,float speed)
 
 
 
-void Time_Init()
+/** @brief 配置 TIM4 的周期更新中断，为 PID 控制提供固定采样节拍。 */
+void Time_Init(void)
 {
     /*开启时钟*/
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM4, ENABLE); // 开启TIM4的时钟

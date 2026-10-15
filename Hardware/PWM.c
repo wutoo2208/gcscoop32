@@ -18,6 +18,7 @@ Servo_t yuantai = {60.84f, 0.0f, 60.84f, 0, 0, 0, Servo_SetAngle4_yuntai};
 Servo_t zhuashou = {2.7f, 2.7f, 2.7f, 0, 0, 0, Servo_SetAngle2_zhuashou};
 Servo_t wukuaipingtai = {20.0f, 20.0f, 20.0f, 0, 0, 0,Servo_SetAngle3_wukuaipingtai};
 
+/** @brief 初始化 TIM2 的舵机 PWM 通道及周期更新中断。 */
 void PWM_Init(void)
 {
 	/* 开启时钟 */
@@ -193,6 +194,7 @@ void set_wukuaipingtai_Angle(float target, float time){
 //    delay_ms1(50);
 }
 
+/** @brief 按位置编号 1~3 将物块平台舵机转到对应放置位。 */
 void set_wukuaipingtai_weizhi(int pos)
 {	
 	if(pos == 0x01){
@@ -258,6 +260,11 @@ int move_all(float target_pos, uint16_t speed, uint8_t accel,float target_pos1, 
 }
 
 
+/**
+ * @brief 同时下发平推、升降和云台目标，并返回预计最长运动时长。
+ * @return 估算时长，单位 ms；本函数不执行与 move_all 相同的末尾等待。
+ * @note 当前实现会覆盖部分速度/加速度入参，speed_of_yuntai 未参与计算。
+ */
 int move_all1(float target_pos, uint16_t speed, uint8_t accel,float target_pos1, uint16_t speed1, uint8_t accel1,float target, float speed_of_yuntai)
 {	
 	accel1 = 240;

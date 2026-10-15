@@ -1,5 +1,5 @@
-#ifndef __DELAY_H
-#define __DELAY_H
+#ifndef CAN_ZDT_DELAY_H
+#define CAN_ZDT_DELAY_H
 
 #include "stm32f4xx.h"
 
@@ -13,6 +13,7 @@
 **********************************************************/
 
 void delay_ms(int32_t i32Cnt);
+void delay_ms1(uint32_t ms);
 void delay_cnt(int32_t i32Cnt);
 
 #endif

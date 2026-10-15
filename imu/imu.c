@@ -1,5 +1,6 @@
 #include "stm32f4xx.h"                  // Device header
 #include "wit_c_sdk.h"
+#include "imu.h"
 #include "delay.h"
 #include "timer.h"
 
@@ -9,16 +10,161 @@
 #define MAG_UPDATE		0x08
 #define READ_UPDATE		0x80
 float realbaud = 0;
-static volatile char s_cDataUpdate = 0, s_cCmd = 0xff;
+static volatile char s_cDataUpdate = 0;
 const uint32_t c_uiBaud[10] = {0, 4800, 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600};
-static void CmdProcess(void);
+#define IMU_CMD_QUEUE_SIZE 4U
+#define IMU_CMD_NONE 0xFFU
+static volatile uint8_t s_cmdQueue[IMU_CMD_QUEUE_SIZE];
+static volatile uint8_t s_cmdHead = 0U;
+static volatile uint8_t s_cmdTail = 0U;
+static uint8_t s_cmdParserState = 0U;
+static uint8_t s_cmdParserValue = IMU_CMD_NONE;
+
+static void CopeCmdData(uint8_t data);
+static uint8_t IsImuCommand(uint8_t data);
+static void QueueImuCommand(uint8_t command);
+static void CmdProcess(uint8_t command);
+static void ShowHelp(void);
 static void AutoScanSensor(void);
+/** @brief 解析串口命令字节；仅接受单字节命令后跟 CRLF 的格式并入队。 */
+static void CopeCmdData(uint8_t data)
+{
+    if (s_cmdParserState == 0U)
+    {
+        if (IsImuCommand(data) != 0U)
+        {
+            s_cmdParserValue = data;
+            s_cmdParserState = 1U;
+        }
+    }
+    else if (s_cmdParserState == 1U)
+    {
+        if (data == '\r')
+        {
+            s_cmdParserState = 2U;
+        }
+        else
+        {
+            s_cmdParserState = 0U;
+            s_cmdParserValue = IMU_CMD_NONE;
+            if (IsImuCommand(data) != 0U)
+            {
+                s_cmdParserValue = data;
+                s_cmdParserState = 1U;
+            }
+        }
+    }
+    else
+    {
+        if ((data == '\n') && (s_cmdParserValue != IMU_CMD_NONE))
+        {
+            QueueImuCommand(s_cmdParserValue);
+        }
+        s_cmdParserState = 0U;
+        s_cmdParserValue = IMU_CMD_NONE;
+        if (IsImuCommand(data) != 0U)
+        {
+            s_cmdParserValue = data;
+            s_cmdParserState = 1U;
+        }
+    }
+}
+
+/** @brief 判断输入字节是否属于本模块支持的 IMU 配置命令。 */
+static uint8_t IsImuCommand(uint8_t data)
+{
+    switch (data)
+    {
+        case 'a': case 'm': case 'e': case 'u': case 'U':
+        case 'B': case 'b': case 'R': case 'r': case 'C':
+        case 'c': case 'h':
+            return 1U;
+        default:
+            return 0U;
+    }
+}
+
+/* Bounded single-producer (USART IRQ), single-consumer (foreground) queue. */
+static void QueueImuCommand(uint8_t command)
+{
+    uint8_t nextHead = (uint8_t)((s_cmdHead + 1U) % IMU_CMD_QUEUE_SIZE);
+    if (nextHead != s_cmdTail)
+    {
+        s_cmdQueue[s_cmdHead] = command;
+        s_cmdHead = nextHead;
+    }
+}
+
+/* Must be called from foreground code, never from an interrupt handler. */
+void imu_process(void)
+{
+    uint8_t command;
+    if (s_cmdTail == s_cmdHead)
+    {
+        return;
+    }
+
+    command = s_cmdQueue[s_cmdTail];
+    s_cmdTail = (uint8_t)((s_cmdTail + 1U) % IMU_CMD_QUEUE_SIZE);
+    CmdProcess(command);
+}
+
+/** @brief 在前台执行已排队的 IMU 校准、波特率、输出频率和数据项配置命令。 */
+static void CmdProcess(uint8_t command)
+{
+    switch (command)
+    {
+        case 'a': (void)WitStartAccCali(); break;
+        case 'm': (void)WitStartMagCali(); break;
+        case 'e': (void)WitStopMagCali(); break;
+        case 'u': (void)WitSetBandwidth(BANDWIDTH_5HZ); break;
+        case 'U': (void)WitSetBandwidth(BANDWIDTH_256HZ); break;
+        case 'B':
+            if (WitSetUartBaud(WIT_BAUD_115200) == WIT_HAL_OK)
+            {
+                Usart2Init(c_uiBaud[WIT_BAUD_115200]);
+                realbaud = (float)c_uiBaud[WIT_BAUD_115200];
+            }
+            break;
+        case 'b':
+            if (WitSetUartBaud(WIT_BAUD_9600) == WIT_HAL_OK)
+            {
+                Usart2Init(c_uiBaud[WIT_BAUD_9600]);
+                realbaud = (float)c_uiBaud[WIT_BAUD_9600];
+            }
+            break;
+        case 'R': (void)WitSetOutputRate(RRATE_10HZ); break;
+        case 'r': (void)WitSetOutputRate(RRATE_1HZ); break;
+        case 'C': (void)WitSetContent(RSW_ACC | RSW_GYRO | RSW_ANGLE | RSW_MAG); break;
+        case 'c': (void)WitSetContent(RSW_ACC); break;
+        case 'h': ShowHelp(); break;
+        default: break;
+    }
+}
+/** @brief 通过 USART2 输出 IMU 串口命令列表。 */
+static void ShowHelp(void)
+{
+    static unsigned char helpText[] =
+        "WIT IMU commands (send one letter + CRLF):\r\n"
+        "a: start accelerometer calibration\r\n"
+        "m/e: start/stop magnetometer calibration\r\n"
+        "u/U: set bandwidth to 5/256 Hz\r\n"
+        "b/B: set baud rate to 9600/115200\r\n"
+        "r/R: set output rate to 1/10 Hz\r\n"
+        "c/C: output acceleration / acc+gyro+angle+mag\r\n"
+        "h: show this help\r\n";
+    Uart2Send(helpText, (unsigned int)(sizeof(helpText) - 1U));
+}
 static void SensorUartSend(uint8_t *p_data, uint32_t uiSize);
 static void SensorDataUpdata(uint32_t uiReg, uint32_t uiRegNum);
 static void Delayms(uint16_t ucMs);
 void Usart2Init(unsigned int uiBaud);//函数的提前声明
 
-void imu_init()
+/**
+ * @brief 初始化 IMU SDK、USART2 和定时基础服务，并扫描传感器波特率。
+ * @note 扫描过程包含轮询与延时，会阻塞初始化流程；不可在中断中调用。
+ */
+void imu_init(void)
 { 
 	Timer_Init();
 	Usart2Init(115200);
@@ -29,6 +175,7 @@ void imu_init()
 	AutoScanSensor();
 }
 
+/** @brief 配置 USART2 的 PD5/PD6 收发复用和接收中断；uiBaud 单位为 bit/s。 */
 void Usart2Init(unsigned int uiBaud)
 {
     GPIO_InitTypeDef GPIO_InitStructure;
@@ -82,6 +229,7 @@ void Usart2Init(unsigned int uiBaud)
     NVIC_Init(&NVIC_InitStructure);
 }
 
+/** @brief 接收 USART2 字节并交给 WIT 协议解析器及命令行解析器处理。 */
 void USART2_IRQHandler(void)
 {
     unsigned char ucTemp;
@@ -89,10 +237,12 @@ void USART2_IRQHandler(void)
     {
         ucTemp = USART_ReceiveData(USART2);
         WitSerialDataIn(ucTemp);
+        CopeCmdData(ucTemp);
         USART_ClearITPendingBit(USART2, USART_IT_RXNE);
     }
 }
 
+/** @brief 通过 USART2 轮询发送指定长度数据，直到最后一字节发送完成后返回。 */
 void Uart2Send(unsigned char *p_data, unsigned int uiSize)
 {   
     unsigned int i;
@@ -104,118 +254,19 @@ void Uart2Send(unsigned char *p_data, unsigned int uiSize)
     while (USART_GetFlagStatus(USART2, USART_FLAG_TC) == RESET);
 }
 
-void CopeCmdData(unsigned char ucData)
-{
-	static unsigned char s_ucData[50], s_ucRxCnt = 0;
-	
-	s_ucData[s_ucRxCnt++] = ucData;
-	if(s_ucRxCnt<3)return;										//Less than three data returned
-	if(s_ucRxCnt >= 50) s_ucRxCnt = 0;
-	if(s_ucRxCnt >= 3)
-	{
-		if((s_ucData[1] == '\r') && (s_ucData[2] == '\n'))
-		{
-			s_cCmd = s_ucData[0];
-			memset(s_ucData,0,50);//
-			s_ucRxCnt = 0;
-		}
-		else 
-		{
-			s_ucData[0] = s_ucData[1];
-			s_ucData[1] = s_ucData[2];
-			s_ucRxCnt = 2;
-			
-		}
-	}
-
-}
-static void ShowHelp(void)
-{
-//	printf("\r\n************************	 WIT_SDK_DEMO	************************");
-//	printf("\r\n************************          HELP           ************************\r\n");
-//	printf("UART SEND:a\\r\\n   Acceleration calibration.\r\n");
-//	printf("UART SEND:m\\r\\n   Magnetic field calibration,After calibration send:   e\\r\\n   to indicate the end\r\n");
-//	printf("UART SEND:U\\r\\n   Bandwidth increase.\r\n");
-//	printf("UART SEND:u\\r\\n   Bandwidth reduction.\r\n");
-//	printf("UART SEND:B\\r\\n   Baud rate increased to 115200.\r\n");
-//	printf("UART SEND:b\\r\\n   Baud rate reduction to 9600.\r\n");
-//	printf("UART SEND:R\\r\\n   The return rate increases to 10Hz.\r\n");
-//	printf("UART SEND:r\\r\\n   The return rate reduction to 1Hz.\r\n");
-//	printf("UART SEND:C\\r\\n   Basic return content: acceleration, angular velocity, angle, magnetic field.\r\n");
-//	printf("UART SEND:c\\r\\n   Return content: acceleration.\r\n");
-//	printf("UART SEND:h\\r\\n   help.\r\n");
-//	printf("******************************************************************************\r\n");
-}
-
-static void CmdProcess(void)
-{
-	switch(s_cCmd)
-	{
-//		case 'a':	
-//			if(WitStartAccCali() != WIT_HAL_OK) 
-//				//printf("\r\nSet AccCali Error\r\n");
-//			break;
-//		case 'm':	
-//			if(WitStartMagCali() != WIT_HAL_OK) 
-//				//printf("\r\nSet MagCali Error\r\n");
-//			break;
-//		case 'e':	
-//			if(WitStopMagCali() != WIT_HAL_OK)
-//				//printf("\r\nSet MagCali Error\r\n");
-//			break;
-//		case 'u':	
-//			if(WitSetBandwidth(BANDWIDTH_5HZ) != WIT_HAL_OK) 
-//				//printf("\r\nSet Bandwidth Error\r\n");
-//			break;
-//		case 'U':	
-//			if(WitSetBandwidth(BANDWIDTH_256HZ) != WIT_HAL_OK) 
-//				//printf("\r\nSet Bandwidth Error\r\n");
-//			break;
-//		case 'B':	
-//			if(WitSetUartBaud(WIT_BAUD_115200) != WIT_HAL_OK) 
-//				printf("\r\nSet Baud Error\r\n");
-//			else 
-//				Usart2Init(c_uiBaud[WIT_BAUD_115200]);											
-//			break;
-//		case 'b':	
-//			if(WitSetUartBaud(WIT_BAUD_9600) != WIT_HAL_OK)
-//				printf("\r\nSet Baud Error\r\n");
-//			else 
-//				Usart2Init(c_uiBaud[WIT_BAUD_9600]);												
-//			break;
-//		case 'R':	
-//			if(WitSetOutputRate(RRATE_10HZ) != WIT_HAL_OK) 
-//				printf("\r\nSet Rate Error\r\n");
-//			break;
-//		case 'r':	
-//			if(WitSetOutputRate(RRATE_1HZ) != WIT_HAL_OK) 
-//				printf("\r\nSet Rate Error\r\n");
-//			break;
-//		case 'C':	
-//			if(WitSetContent(RSW_ACC|RSW_GYRO|RSW_ANGLE|RSW_MAG) != WIT_HAL_OK) 
-//				printf("\r\nSet RSW Error\r\n");
-//			break;
-//		case 'c':	
-//			if(WitSetContent(RSW_ACC) != WIT_HAL_OK) 
-//				printf("\r\nSet RSW Error\r\n");
-//			break;
-//		case 'h':
-//			ShowHelp();
-//			break;
-	}
-	s_cCmd = 0xff;
-}
-
+/** @brief 将 WIT SDK 的发送回调适配到本模块 USART2 发送函数。 */
 static void SensorUartSend(uint8_t *p_data, uint32_t uiSize)
 {
 	Uart2Send(p_data, uiSize);
 }
 
+/** @brief 将 WIT SDK 的毫秒延时回调转接到工程延时服务。 */
 static void Delayms(uint16_t ucMs)
 {
 	delay_ms(ucMs);
 }
 
+/** @brief 将 WIT SDK 的寄存器更新范围归类为加速度、陀螺仪、角度等更新标志。 */
 static void SensorDataUpdata(uint32_t uiReg, uint32_t uiRegNum)
 {
 	int i;
@@ -251,6 +302,7 @@ static void SensorDataUpdata(uint32_t uiReg, uint32_t uiRegNum)
     }
 }
 
+/** @brief 逐个尝试预设波特率并读取寄存器，收到有效更新后结束扫描。 */
 static void AutoScanSensor(void)
 {
 	int i, iRetry;
@@ -267,7 +319,6 @@ static void AutoScanSensor(void)
 			delay_ms(100);
 			if(s_cDataUpdate != 0)
 			{
-				ShowHelp();
 				return ;
 			}
 			iRetry--;
@@ -275,6 +326,7 @@ static void AutoScanSensor(void)
 	}
 }
 
+/** @brief 将 IMU 原始寄存器换算为三轴加速度、角速度和角度数组；物理量单位依次为 g、度/秒和度。 */
 void imu_scan(float* fAcc,float* fGyro,float* fAngle)
 {   
 	int i;

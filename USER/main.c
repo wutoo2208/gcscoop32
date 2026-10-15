@@ -16,6 +16,11 @@
 #include "wit_c_sdk.h"
 #include "exti.h"
 
+/* Set to 1 only after validating the full autonomous mission. */
+#ifndef ENABLE_MISSION_AFTER_STARTUP
+#define ENABLE_MISSION_AFTER_STARTUP 0
+#endif
+
 //x减物块右移（从外侧往内看）//y+物块往地图内侧走
 #define  x_center_red       955
 #define  y_center_red		519
@@ -52,6 +57,10 @@ void wait_send_shumeipai(uint8_t message,uint16_t time);
 void clear_ckp(void);
 void jixie_reset(void);
 char message[] = "Hello, BT - 04 from STM32F407!\r\n";
+/**
+ * @brief 初始化整机外设并执行启动流程；任务主体由 ENABLE_MISSION_AFTER_STARTUP 控制编译。
+ * @note 进入 jixie_reset() 后会留在其前台循环中，该调用当前不会返回。
+ */
 int main(void)
 {	
 /*
@@ -88,7 +97,7 @@ int main(void)
 	move_all(-120.0f,1000,200   ,0,2000,200   ,278.0f,13);
 	set_zhuashou_kai();
 	jixie_reset();
-	while(1){}
+#if ENABLE_MISSION_AFTER_STARTUP
 //*************************第一轮*************************//
 	while(1){
 		LED_Toggle2();
@@ -519,8 +528,14 @@ int main(void)
 	car_move2(-130,0,150,150);//在粗加工区往前靠
 	
 	jixie_reset();
+#else
+	while(1){
+        imu_process();
+    }
+#endif
 }
 
+/** @brief 执行绿色目标位的放置舵机与底盘动作序列。 */
 void fangzhi_green(void)
 {
 	move_all(-48.0f,1000,200   ,25,1000,200   ,135,13);
@@ -530,6 +545,7 @@ void fangzhi_green(void)
 	set_zhuashou_kai();
 }
 
+/** @brief 执行红色目标位的放置舵机与底盘动作序列。 */
 void fangzhi_red(void)
 {
 	move_all(-48.0f,1000,200   ,25,1000,200   ,135,13);
@@ -538,6 +554,7 @@ void fangzhi_red(void)
 	
 	set_zhuashou_kai();
 }
+/** @brief 执行蓝色目标位的放置舵机与底盘动作序列。 */
 void fangzhi_blue(void)
 {
 	move_all(-48.0f,1000,200   ,25,1000,200   ,135,13);
@@ -546,6 +563,10 @@ void fangzhi_blue(void)
 	set_zhuashou_kai();
 }
 
+/**
+ * @brief 按任务码分派色环放置动作。
+ * @param task 颜色任务码：0x01 红色、0x02 绿色、0x03 蓝色。
+ */
 void fangzhi(uint8_t task)
 {
 	if(task == 0x01){
@@ -557,6 +578,10 @@ void fangzhi(uint8_t task)
 	}
 }
 
+/**
+ * @brief 按任务码执行码垛区域的放置动作。
+ * @param task 由上层任务流程传入的颜色/位置编号。
+ */
 void fangzhi_maduo(uint8_t task)
 {
 	if(task == 0x01){
@@ -579,6 +604,7 @@ void fangzhi_maduo(uint8_t task)
 	}
 }
 
+/** @brief 执行从绿色目标位取块并送回物块平台的动作序列。 */
 void na_green(void)
 {	
 	move_all(-10.0f,1000,200   ,130,1000,200   ,278,13);
@@ -590,6 +616,7 @@ void na_green(void)
 	set_zhuashou_kai();
 }
 
+/** @brief 执行从蓝色目标位取块并送回物块平台的动作序列。 */
 void na_blue(void)
 {
 	move_all(3.0f,1000,200   ,110,1000,200   ,317,13);
@@ -601,6 +628,7 @@ void na_blue(void)
 	set_zhuashou_kai();
 }
 
+/** @brief 执行从红色目标位取块并送回物块平台的动作序列。 */
 void na_red(void)
 {
 	move_all(3.0f,1000,200   ,130,1000,200   ,236,13);
@@ -611,6 +639,10 @@ void na_red(void)
 	set_zhuashou_kai();
 }
 
+/**
+ * @brief 按任务码分派色环取块动作。
+ * @param task 颜色任务码：0x01 红色、0x02 绿色、0x03 蓝色。
+ */
 void na(uint8_t task)
 {
 	if(task == 0x01){
@@ -622,6 +654,10 @@ void na(uint8_t task)
 	}
 }
 
+/**
+ * @brief 根据任务码执行转盘取块并转移到物块平台的动作序列。
+ * @param task 转盘物块对应的任务编号。
+ */
 void yuantai_na(uint8_t task)
 {
 	if(task == 0x01){
@@ -650,6 +686,10 @@ void yuantai_na(uint8_t task)
 	}
 }
 
+/**
+ * @brief 将机构移动到转盘指定物块的识别位置，供视觉确认。
+ * @param task 转盘物块对应的任务编号。
+ */
 void yuantai_na1(uint8_t task)
 {
 	if(task == 0x01){
@@ -664,6 +704,10 @@ void yuantai_na1(uint8_t task)
 	}
 }
 
+/**
+ * @brief 在物块静止确认后抓取指定转盘物块并转移到物块平台。
+ * @param task 转盘物块对应的任务编号。
+ */
 void yuantai_na2(uint8_t task)
 {
 	if(task == 0x01){
@@ -755,8 +799,8 @@ void transfer_position_sehuan(uint8_t fenbian_choose,uint8_t task_num)
 		x_origin = x_origin - x_center;
 		y_origin = y_origin - y_center;
 		
-		direct_x = x_origin * 1.1805555;    //实际尺寸系数
-		direct_y = y_origin * 1.1805555;
+		direct_x = (double)x_origin * 1.1805555;    //实际尺寸系数
+		direct_y = (double)y_origin * 1.1805555;
 	}else if(fenbian_choose == 0x02){
 		if(Serial_RxPacket[8] == 0x31){
 			x_center = x_center_red;y_center = y_center_red;
@@ -768,8 +812,8 @@ void transfer_position_sehuan(uint8_t fenbian_choose,uint8_t task_num)
 		x_origin = x_origin - x_center;
 		y_origin = y_origin - y_center;
 	
-		direct_x = x_origin * 0.29239766;    //实际尺寸系数
-		direct_y = y_origin * 0.29239766;
+		direct_x = (double)x_origin * 0.29239766;    //实际尺寸系数
+		direct_y = (double)y_origin * 0.29239766;
 	}
 	
 	if(task_num == 2){
@@ -799,6 +843,10 @@ void transfer_position_sehuan(uint8_t fenbian_choose,uint8_t task_num)
 	}
 }
 
+/**
+ * @brief 等待启动开关条件、设置机构初始姿态并开启相关接收/定时功能。
+ * @note 函数末尾为永久前台循环，负责持续处理 IMU 命令，因此不会返回。
+ */
 void jixie_reset(void)
 {	
 	while(swith_out() == 1){		
@@ -811,7 +859,9 @@ void jixie_reset(void)
 	set_wukuaipingtai_Angle(20.0f,300);
 	USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
 	TIM_Cmd(TIM5, ENABLE); 
-	while(1){}
+	while(1){
+        imu_process();
+    }
 }
 
 /*
@@ -846,6 +896,7 @@ void TIM5_IRQHandler(void)
 	}
 }
 
+/** @brief 向串口屏文本控件发送空内容并追加屏幕协议结束字节。 */
 void clear_ckp(void)
 {
 	sprintf(tjcstr, "t0.txt=\"  \"");

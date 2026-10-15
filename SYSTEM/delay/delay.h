@@ -1,5 +1,5 @@
-#ifndef __DELAY_H
-#define __DELAY_H 			   
+#ifndef SYSTEM_DELAY_DELAY_H
+#define SYSTEM_DELAY_DELAY_H
 #include <sys.h>	  
 //////////////////////////////////////////////////////////////////////////////////  
 //本程序只供学习使用，未经作者许可，不得用于其它任何用途

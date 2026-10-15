@@ -269,6 +269,7 @@ uint8_t wait_ms(unsigned int ms)
 	TIM6->SR = 0;
 	TIM6->CR1 |= (1<<3);
 	TIM6->CR1 |= (1<<0);
+	return 0U;
 }
 
 

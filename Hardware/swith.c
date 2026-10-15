@@ -1,6 +1,7 @@
 #include "stm32f4xx.h"                  // Device header
 
-void Swith_Init()
+/** @brief 将 PC9 配置为带上拉的开关量输入。 */
+void Swith_Init(void)
 {
 	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);			//开启GPIOC的时钟
 	
@@ -13,7 +14,8 @@ void Swith_Init()
 	GPIO_Init(GPIOC, &GPIO_InitStructure);							//初始化GPIOC
 }
 
-uint8_t swith_out()
+/** @brief 读取 PC9 原始电平；返回 1 表示高电平，返回 0 表示低电平。 */
+uint8_t swith_out(void)
 {   
    return GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_9);
 }
