@@ -161,7 +161,7 @@ void car_move2(float x,float y,int a_in,int car_speed)
 
 //当y>0时左移//仅执行任务，不计时
 void car_move3(float x,float y,int a_in,int car_speed)
-{
+{ 
 	delay_ms1(10);
 	change_SNA1(a_in,car_speed);
 	car_move_distance_y(-y);
@@ -177,7 +177,7 @@ void car_move4(float x,float y,int a_in,int car_speed)
 
 
 double shengjiang_control(int target_pos, uint16_t speed, uint8_t accel)
-{   
+{
 	if(target_pos >=135.0f){
 		target_pos =135.0f;
 	}

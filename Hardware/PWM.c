@@ -169,12 +169,12 @@ void set_zhuashou_Angle(float target, float time){
     delay_ms1(30);
 }
 
-void set_zhuashou_he(void)
-{
-	set_zhuashou_Angle(6.0f,300);
-}	
-
 void set_zhuashou_kai(void)
+{
+	set_zhuashou_Angle(90.0f,300);
+}
+
+void set_zhuashou_he(void)
 {
 	set_zhuashou_Angle(45.0f,300);
 }	
@@ -194,7 +194,7 @@ void set_wukuaipingtai_Angle(float target, float time){
 }
 
 void set_wukuaipingtai_weizhi(int pos)
-{	
+{
 	if(pos == 0x01){
 		set_wukuaipingtai_Angle(20.0f,300);
 	}else if(pos == 0x02){

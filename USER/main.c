@@ -33,7 +33,7 @@ float direct_y = 0;
 float distance_wukuai = 150;
 float x_origin = 0;
 float y_origin = 0;
-int task[6]; //存储颜色信息
+int task[17]; //存储颜色信息
 int ypcode[6]; //存储颜色信息
 float angle = 0;
 
@@ -78,9 +78,30 @@ int main(void)
 	PIDInit();		//用定时器实现定时中断//周期为50ms//该中断最好不要被别的中断打断
 	Key_EXTI_Init();//按键中断//向树莓派发送重启命令
     clear_ckp();    //清空串口屏
+		
+		
+		
+		sprintf(tjcstr, "t0.txt=\"111111\"");
+		HMISends(tjcstr);
+		HMISendb(0xff);
+
 	dianji_move_flag = 1;//使能电机的运动
 	TIM_SetCompare1(TIM3,0);  //关闭补光灯
 //**************************测试代码***************************//
+
+
+
+move_all1(-120.0f,1000,200   ,0,2000,200   ,278,13);
+delay_ms (3000);
+move_all1(-120.0f,1000,200   ,0,2000,200   ,200,13);
+
+
+set_zhuashou_kai();
+delay_ms (3000);
+set_zhuashou_he();
+
+
+
 	while(swith_out() == 1){		
 		LED_Toggle2();
 		delay_ms1(50);
@@ -112,16 +133,20 @@ int main(void)
     //读取树莓派信息	
 	while(1){
 		if (Serial_GetRxFlag() == 1){   //收到数据包
-			   sprintf(tjcstr, "t0.txt=\"%d%d%d+%d%d%d \"",
-										Serial_RxPacket[0]-0x30,Serial_RxPacket[1]-0x30,Serial_RxPacket[2]-0x30,
-										Serial_RxPacket[4]-0x30,Serial_RxPacket[5]-0x30,Serial_RxPacket[6]-0x30);
+			   sprintf(tjcstr, "t0.txt=\"%d%d%d+%d%d%d+%d%d%d+%d%d%d \"",
+										Serial_RxPacket[0]-0x30,Serial_RxPacket[1]-0x30,Serial_RxPacket[2]-0x30,            //串口接收任务
+										Serial_RxPacket[4]-0x30,Serial_RxPacket[5]-0x30,Serial_RxPacket[6]-0x30,
+										Serial_RxPacket[8]-0x30,Serial_RxPacket[9]-0x30,Serial_RxPacket[10]-0x30,
+										Serial_RxPacket[12]-0x30,Serial_RxPacket[13]-0x30,Serial_RxPacket[14]-0x30);
 				HMISends(tjcstr);
 	            HMISendb(0xff);//在显示屏上面显示任务
 				break;
 			  }
-	}	
-    task[0]= Serial_RxPacket[0]-0x30;task[1] = Serial_RxPacket[1]-0x30;task[2] = Serial_RxPacket[2]-0x30;
-	task[3]= Serial_RxPacket[4]-0x30;task[4] = Serial_RxPacket[5]-0x30;task[5] = Serial_RxPacket[6]-0x30;
+	}
+  task[0]= Serial_RxPacket[0]-0x30;  task[1] = Serial_RxPacket[1]-0x30;  task[2] = Serial_RxPacket[2]-0x30;
+	task[3]= Serial_RxPacket[4]-0x30;  task[4] = Serial_RxPacket[5]-0x30;  task[5] = Serial_RxPacket[6]-0x30;
+	task[6]= Serial_RxPacket[8]-0x30;  task[7] = Serial_RxPacket[9]-0x30;  task[8] = Serial_RxPacket[10]-0x30;
+	task[9]= Serial_RxPacket[12]-0x30;  task[10]= Serial_RxPacket[13]-0x30;  task[11] = Serial_RxPacket[14]-0x30;
 	set_wukuaipingtai_weizhi(0x01);
 //****************************调整(亮度等参数)****************************//
 	TIM_SetCompare1(TIM3,300);
@@ -142,7 +167,7 @@ int main(void)
 			}
 		}
 		//0x01代表选择的是转盘上的物块，70.0f是物块的高度，0x00代表不选择颜色
-		transfer_position_wukuai(0x01,70.0f,0x00); 
+		transfer_position_wukuai(0x01,70.0f,Serial_RxPacket[0]);  //
 		car_move_distance(direct_x,direct_y,100,80);
 		if(Serial_RxPacket[8] != 0x34){
 			break;
@@ -152,7 +177,8 @@ int main(void)
 	}
 	move_all(60.0f,1000,200   ,0,2000,200   ,278,13);
 	wait_send_shumeipai(0x33,20000);  //识别圆盘上要抓物块的顺序
-	ypcode[0]= Serial_RxPacket[0]-0x30;ypcode[1] = Serial_RxPacket[1]-0x30;ypcode[2] = Serial_RxPacket[2]-0x30;
+	ypcode[0]= task[0];ypcode[1] = task[1];ypcode[2] = task[2];
+	ypcode[3]= task[6];ypcode[4] = task[7];ypcode[5] = task[8];
 	//1.圆台拿走第一个物块
 	set_wukuaipingtai_weizhi(0x01);
 	yuantai_na(ypcode[0]);
@@ -228,7 +254,7 @@ int main(void)
 	move_all(-48.0f,1000,200   ,33,1000,200   ,135,13);
 	set_zhuashou_he();
 	//色换放置第一个
-	fangzhi(task[0]);	
+	fangzhi(task[3]);	
 	set_wukuaipingtai_weizhi(0x02);
 	delay_ms1((int)shengjiang_control(33,2000,240));
 	//物块平台抓物块
@@ -236,7 +262,7 @@ int main(void)
 	set_zhuashou_he();
 	
 	//色环放置第二个	
-	fangzhi(task[1]);
+	fangzhi(task[4]);
 	set_wukuaipingtai_weizhi(0x03);
 	delay_ms1((int)shengjiang_control(33,2000,240));
 	//物块平台抓物块
@@ -244,16 +270,16 @@ int main(void)
 	set_zhuashou_he();
 	
 	//色环放置第三个	
-	fangzhi(task[2]);
+	fangzhi(task[5]);
 	set_wukuaipingtai_weizhi(0x01);
 	//色环拿一
-	na(task[0]);
+	na(task[3]);
 	set_wukuaipingtai_weizhi(0x02);
 	//色环拿二
-	na(task[1]);
+	na(task[4]);
 	set_wukuaipingtai_weizhi(0x03);
 	//色环拿三
-	na(task[2]);
+	na(task[5]);
 	//复位到识别的位置
 	set_wukuaipingtai_weizhi(0x01);
 	move_all1(-120.0f,1000,200   ,0,1000,200   ,278,13);
@@ -288,7 +314,7 @@ int main(void)
 		transfer_position_sehuan(0x02,0x02);	
 		if(Serial_RxPacket[8] == 0x34){
 			car_move_distance(0,0,70,50);//如果没有看到颜色，那就不移动
-		}else{	
+		}else{
 			car_move_distance(direct_x,direct_y,130,100);//如果看到颜色，那就按照正常的方式移动
 		}
 	}//至此第二次定标完成
@@ -297,7 +323,7 @@ int main(void)
 	move_all(-48.0f,1000,200   ,33,1000,200   ,135,13);
 	set_zhuashou_he();
 	//色环放置第一个
-	fangzhi(task[0]);
+	fangzhi(task[3]);
 	set_wukuaipingtai_weizhi(0x02);
 	delay_ms1((int)shengjiang_control(33,2000,240));
 	
@@ -305,7 +331,7 @@ int main(void)
 	move_all(-48.0f,1000,200   ,33,1000,200   ,135,13);
 	set_zhuashou_he();
 	//色环放置第二个	
-	fangzhi(task[1]);
+	fangzhi(task[4]);
 	set_wukuaipingtai_weizhi(0x03);
 	delay_ms1((int)shengjiang_control(33,2000,240));
 	
@@ -313,7 +339,7 @@ int main(void)
 	move_all(-48.0f,1000,200   ,33,2000,200   ,135,13);
 	set_zhuashou_he();
 	//放置第三个	
-	fangzhi(task[2]);
+	fangzhi(task[5]);
 	
 	//复位到识别的位置
 	set_wukuaipingtai_weizhi(0x01);
@@ -354,15 +380,15 @@ int main(void)
 	}
 	move_all(60.0f,1000,200   ,0,2000,200   ,278,13);
 	wait_send_shumeipai(0x34,20000);
-	ypcode[0]= Serial_RxPacket[0]-0x30;ypcode[1] = Serial_RxPacket[1]-0x30;ypcode[2] = Serial_RxPacket[2]-0x30;
+	
 	
 	//1.圆台拿走第一个物块
 	set_wukuaipingtai_weizhi(0x01);
-	yuantai_na(ypcode[0]);
+	yuantai_na(ypcode[3]);
 	
 	//2.圆台拿走第二个物块
 	set_wukuaipingtai_weizhi(0x02);
-	yuantai_na1(ypcode[1]);   //达到指定的识别的位置
+	yuantai_na1(ypcode[4]);   //达到指定的识别的位置
 		//判断物块是否静止
 	wait_send_shumeipai(0x62,30000);
 	while(1){
@@ -370,18 +396,18 @@ int main(void)
 			break;
 		}
 	}Serial_RxPacket[0] = 0x30;Serial_RxPacket[1] = 0x30;
-	yuantai_na2(ypcode[1]);  //一旦识别到物块静止，抓物块到物块平台上
+	yuantai_na2(ypcode[4]);  //一旦识别到物块静止，抓物块到物块平台上
 		
 	//3.圆台拿走第三个物块
 	set_wukuaipingtai_weizhi(0x03);
-	yuantai_na1(ypcode[2]);	 //达到指定的识别的位置
+	yuantai_na1(ypcode[5]);	 //达到指定的识别的位置
 	wait_send_shumeipai(0x63,30000);
 	while(1){
 		if(Serial_RxPacket[0] == 0x39 && Serial_RxPacket[1] == 0x38){
 			break;
 		}
 	}Serial_RxPacket[0] = 0x30;Serial_RxPacket[1] = 0x30;	
-	yuantai_na2(ypcode[2]);	 //一旦识别到物块静止，抓物块到物块平台上
+	yuantai_na2(ypcode[5]);	 //一旦识别到物块静止，抓物块到物块平台上
 
 	TIM_SetCompare1(TIM3,0); //关闭补光灯
 	//复位到识别的位置
@@ -421,7 +447,7 @@ int main(void)
 		transfer_position_sehuan(0x02,0x02);	
 		if(Serial_RxPacket[8] == 0x34){
 			car_move_distance(0,0,70,50);//如果没有看到颜色，那就不移动
-		}else{	
+		}else{
 			car_move_distance(direct_x,direct_y,130,100);//如果看到颜色，那就按照正常的方式移动
 		}
 	}//至此第二次定标完成
@@ -429,30 +455,30 @@ int main(void)
 	move_all(-48.0f,1000,200   ,33,1000,200   ,135,13);
 	set_zhuashou_he();
 	//色环放置第一个
-	fangzhi(task[3]);
+	fangzhi(task[9]);
 	set_wukuaipingtai_weizhi(0x02);
 	delay_ms1((int)shengjiang_control(33,2000,240));
 	move_all(-48.0f,1000,200   ,33,1000,200   ,135,13);//物块平台抓物块
 	set_zhuashou_he();
 	
 	//色环放置第二个	
-	fangzhi(task[4]);
+	fangzhi(task[10]);
 	set_wukuaipingtai_weizhi(0x03);
 	delay_ms1((int)shengjiang_control(33,2000,240));
 	move_all(-48.0f,1000,200   ,33,2000,200   ,135,13);//物块平台抓物块
 	set_zhuashou_he();
 	
 	//色环放置第二个	
-	fangzhi(task[5]);
+	fangzhi(task[11]);
 	set_wukuaipingtai_weizhi(0x01);
 	//拿一
-	na(task[3]);
+	na(task[9]);
 	set_wukuaipingtai_weizhi(0x02);
 	//拿二
-	na(task[4]);
+	na(task[10]);
 	set_wukuaipingtai_weizhi(0x03);
 	//拿三
-	na(task[5]);
+	na(task[11]);
 	//复位到识别的位置
 	set_wukuaipingtai_weizhi(0x01);
 	move_all1(-120.0f,1000,200   ,0,1000,200   ,278,13);
@@ -491,21 +517,21 @@ int main(void)
 	move_all(-48.0f,1000,200   ,33,1000,200   ,135,13);//物块平台抓物块
 	set_zhuashou_he();
 	//放置第一个
-	fangzhi_maduo(task[3]);
+	fangzhi_maduo(task[0]);
 	set_wukuaipingtai_weizhi(0x02);
 	delay_ms1((int)shengjiang_control(33,2000,240));
 	move_all(-48.0f,1000,200   ,33,1000,200   ,135,13);//物块平台抓物块
 	set_zhuashou_he();
 	
 	//放置第二个	
-	fangzhi_maduo(task[4]);
+	fangzhi_maduo(task[1]);
 	set_wukuaipingtai_weizhi(0x03);
 	delay_ms1((int)shengjiang_control(33,2000,240));
 	move_all(-48.0f,1000,200   ,33,2000,200   ,135,13);//物块平台抓物块
 	set_zhuashou_he();
 	
-	//放置第三个	
-	fangzhi_maduo(task[5]);
+	//放置第三个
+	fangzhi_maduo(task[2]);
 	set_wukuaipingtai_weizhi(0x01);
 	//回到启停区
 	PID_move(-30,0,0,300,90,1);//回退
@@ -521,7 +547,7 @@ int main(void)
 	jixie_reset();
 }
 
-void fangzhi_green(void)
+void fangzhi_green(void)   //2
 {
 	move_all(-48.0f,1000,200   ,25,1000,200   ,135,13);
 	move_all(-20.0f,1000,200   ,25,1000,200   ,135,13);
@@ -530,7 +556,7 @@ void fangzhi_green(void)
 	set_zhuashou_kai();
 }
 
-void fangzhi_red(void)
+void fangzhi_red(void)   //3
 {
 	move_all(-48.0f,1000,200   ,25,1000,200   ,135,13);
 	move_all(3.0f+1.0f,1000,200   ,25,1000,200   ,236.0f,13);
@@ -538,7 +564,7 @@ void fangzhi_red(void)
 	
 	set_zhuashou_kai();
 }
-void fangzhi_blue(void)
+void fangzhi_blue(void)   //1
 {
 	move_all(-48.0f,1000,200   ,25,1000,200   ,135,13);
 	move_all(3.0f+5.8f,1000,200   ,25,1000,200   ,317.0f+1.4f,13);
@@ -549,11 +575,11 @@ void fangzhi_blue(void)
 void fangzhi(uint8_t task)
 {
 	if(task == 0x01){
-		fangzhi_red();
+		fangzhi_blue();
 	}else if(task == 0x02){
 		fangzhi_green();
 	}else if(task == 0x03){
-		fangzhi_blue();
+		fangzhi_red();
 	}
 }
 
@@ -614,11 +640,11 @@ void na_red(void)
 void na(uint8_t task)
 {
 	if(task == 0x01){
-		na_red();
+		na_blue();
 	}else if(task == 0x02){
 		na_green();
 	}else if(task == 0x03){
-		na_blue();
+		na_red();
 	}
 }
 

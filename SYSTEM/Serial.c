@@ -4,7 +4,7 @@
 
 
 uint8_t Serial_TxPacket[9];				//定义发送数据包数组，数据包格式：FF 01 02 03 04 05 06 07 08 09 FE
-uint8_t Serial_RxPacket[9];				//定义接收数据包数组,接受九个数据
+uint8_t Serial_RxPacket[17];				//定义接收数据包数组,接受17个数据(15字节二维码数据)
 uint8_t Serial_RxFlag;					//定义接收数据包标志位
 int code1[3] = {0,0,0};
 int code2[3] = {0,0,0};
@@ -177,7 +177,7 @@ void USART1_IRQHandler(void)
 		{
 			Serial_RxPacket[pRxPacket] = RxData;	//将数据存入数据包数组的指定位置
 			pRxPacket ++;				//数据包的位置自增
-			if (pRxPacket >= 9)			//如果收够9个数据
+			if (pRxPacket >= 17)			//如果收够17个数据
 			{
 				RxState = 2;			//置下一个状态
 			}
