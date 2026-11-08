@@ -1,0 +1,79 @@
+<html>
+<body>
+<pre>
+<h1>礦ision Build Log</h1>
+<h2>Tool Versions:</h2>
+IDE-Version: μVision V5.33.0.0
+Copyright (C) 2020 ARM Ltd and ARM Germany GmbH. All rights reserved.
+License Information: 1 2693310580@qq.com, 1, LIC=585FJ-UPE29-45GT5-G8Z20-V4YUX-CQSUU
+ 
+Tool Versions:
+Toolchain:       MDK-ARM Plus  Version: 5.33.0.0
+Toolchain Path:  D:\script\keil5\ARM\ARMCC\Bin
+C Compiler:      Armcc.exe V5.06 update 7 (build 960)
+Assembler:       Armasm.exe V5.06 update 7 (build 960)
+Linker/Locator:  ArmLink.exe V5.06 update 7 (build 960)
+Library Manager: ArmAr.exe V5.06 update 7 (build 960)
+Hex Converter:   FromElf.exe V5.06 update 7 (build 960)
+CPU DLL:         SARMCM3.DLL V5.33.0.0
+Dialog DLL:      DCM.DLL V1.17.3.0
+Target DLL:      CMSIS_AGDI.dll V1.32.12.0
+Dialog DLL:      TCM.DLL V1.48.0.0
+ 
+<h2>Project:</h2>
+C:\Users\26933\Desktop\gcscoop32\USER\Template.uvprojx
+Project File Date:  09/12/2026
+
+<h2>Output:</h2>
+*** Using Compiler 'V5.06 update 7 (build 960)', folder: 'D:\script\keil5\ARM\ARMCC\Bin'
+Build target 'Template'
+compiling main.c...
+..\can_ZDT\yyb_move.h(22): warning:  #1-D: last line of file ends without a newline
+  #endif
+..\imu\imu.h(4): warning:  #1295-D: Deprecated declaration imu_init - give arg types
+  void imu_init();
+..\imu\imu.h(9): warning:  #1-D: last line of file ends without a newline
+  #endif
+..\LED\LED.h(10): warning:  #1-D: last line of file ends without a newline
+  #endif
+..\Hardware\swith.h(4): warning:  #1295-D: Deprecated declaration Swith_Init - give arg types
+  void Swith_Init();
+..\Hardware\swith.h(5): warning:  #1295-D: Deprecated declaration swith_out - give arg types
+  uint8_t swith_out();
+..\Hardware\swith.h(7): warning:  #1-D: last line of file ends without a newline
+  #endif
+..\Hardware\pid.h(30): warning:  #1-D: last line of file ends without a newline
+  #endif
+exti.h(6): warning:  #1-D: last line of file ends without a newline
+  #endif
+main.c(126): warning:  #128-D: loop is not reachable
+  	while(1){
+main.c(796): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+  		direct_x = x_origin * 1.1805555;    //实际尺寸系数
+main.c(797): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+  		direct_y = y_origin * 1.1805555;
+main.c(809): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+  		direct_x = x_origin * 0.29239766;    //实际尺寸系数
+main.c(810): warning:  #1035-D: single-precision operand implicitly converted to double-precision
+  		direct_y = y_origin * 0.29239766;
+main.c: 14 warnings, 0 errors
+linking...
+Program Size: Code=41696 RO-data=2640 RW-data=320 ZI-data=2624  
+FromELF: creating hex file...
+"..\OBJ\Template.axf" - 0 Error(s), 14 Warning(s).
+
+<h2>Software Packages used:</h2>
+
+Package Vendor: Keil
+                http://www.keil.com/pack/Keil.STM32F4xx_DFP.1.0.8.pack
+                Keil.STM32F4xx_DFP.1.0.8
+                STMicroelectronics STM32F4 Series Device Support, Drivers and Examples
+
+<h2>Collection of Component include folders:</h2>
+  C:\Users\26933\AppData\Local\Arm\Packs\Keil\STM32F4xx_DFP\1.0.8\Device\Include
+
+<h2>Collection of Component Files used:</h2>
+Build Time Elapsed:  00:00:01
+</pre>
+</body>
+</html>
