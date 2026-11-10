@@ -16,7 +16,7 @@
 #include "wit_c_sdk.h"
 #include "exti.h"
 
-//x¼õÎï¿éÓÒÒÆ£¨´ÓÍâ²àÍùÄÚ¿´£©//y+Îï¿éÍùµØÍ¼ÄÚ²à×ß
+//xï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¿ï¿½ï¿½ï¿½//y+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¼ï¿½Ú²ï¿½ï¿½ï¿½
 #define  x_center_red       955
 #define  y_center_red		519
 
@@ -33,20 +33,20 @@ float direct_y = 0;
 float distance_wukuai = 150;
 float x_origin = 0;
 float y_origin = 0;
-int task[17]; //´æ´¢ÑÕÉ«ÐÅÏ¢
-int ypcode[6]; //´æ´¢ÑÕÉ«ÐÅÏ¢
+int task[17]; //ï¿½æ´¢ï¿½ï¿½É«ï¿½ï¿½Ï¢
+int ypcode[6]; //ï¿½æ´¢ï¿½ï¿½É«ï¿½ï¿½Ï¢
 float angle = 0;
 
 void transfer_position_wukuai(uint8_t task_choose,float distance,uint8_t color);
 void transfer_position_sehuan(uint8_t fenbian_choose,uint8_t task_num);
 
-void fangzhi(uint8_t task); //É«»·Î»ÖÃ·ÅÖÃÎï¿é
-void fangzhi_maduo(uint8_t task);  //Âë¶âÎ»ÖÃ·ÅÖÃÎï¿é
-void na(uint8_t task);   //É«»·Î»ÖÃÄÃÎï¿é
+void fangzhi(uint8_t task); //É«ï¿½ï¿½Î»ï¿½Ã·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+void fangzhi_maduo(uint8_t task);  //ï¿½ï¿½ï¿½Î»ï¿½Ã·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+void na(uint8_t task);   //É«ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-void yuantai_na(uint8_t task);//Ô²ÅÌÎ»ÖÃÄÃÎï¿é
-void yuantai_na1(uint8_t task);//Ô²ÅÌÎ»ÖÃÄÃÎï¿é£¬Ê¶±ð¾ÍÎ»
-void yuantai_na2(uint8_t task);//Ô²ÅÌÎ»ÖÃÄÃÎï¿é£¬Ê¶±ðµ½Îï¿é¾²Ö¹£¬´ËÊ±×¥È¡
+void yuantai_na(uint8_t task);//Ô²ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+void yuantai_na1(uint8_t task);//Ô²ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½é£¬Ê¶ï¿½ï¿½ï¿½Î»
+void yuantai_na2(uint8_t task);//Ô²ï¿½ï¿½Î»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½é£¬Ê¶ï¿½ï¿½ï¿½ï¿½é¾²Ö¹ï¿½ï¿½ï¿½ï¿½Ê±×¥È¡
 
 void wait_send_shumeipai(uint8_t message,uint16_t time);
 void clear_ckp(void);
@@ -55,29 +55,29 @@ char message[] = "Hello, BT - 04 from STM32F407!\r\n";
 int main(void)
 {	
 /*
-	ËùÓÐµÄÖÐ¶Ï£º
-		1.OLEDÃ¿¸ô500ms¸üÐÂ½Ç¶ÈÊý¾Ý£¨×îºÃ²»ÆôÓÃ£¬ÀïÃæºÄÊ±ºÜ³¤£©£¨»áÓ°Ïìdelayº¯ÊýµÄµ÷ÓÃÕýÈ·Óë·ñ£©
-		2.delayms1º¯ÊýÔÚÆôÓÃÊ±×îºÃ¹Ø±ÕËùÓÐÖÐ¶Ï
-		3.PIDÃ¿¼ä¸ô50ms½øÐÐÒ»´ÎPID¼ÆËã£¬»¨25ms¸øËùÓÐµç»ú·¢ËÍÖ¸Áî£¨ºÄÊ±ÖÐµÈ£©
-		4.IMUÃ¿´Î½ÓÊÜÐÅÏ¢´¥·¢Ò»´ÎÖÐ¶Ï
-		5.Ê÷Ý®ÅÉ¸østm32·¢ËÍÐÅÏ¢Ê±´¥·¢ÖÐ¶Ï
-		6.²½½øµç»úµ½Î»Ê±·¢ËÍÐÅÏ¢ÖÐ¶Ï
-		7.¶æ»ú¿ØÖÆÃ¿¸ô20ms¶¨Ê±¿ØÖÆ½Ç¶È
+	ï¿½ï¿½ï¿½Ðµï¿½ï¿½Ð¶Ï£ï¿½
+		1.OLEDÃ¿ï¿½ï¿½500msï¿½ï¿½ï¿½Â½Ç¶ï¿½ï¿½ï¿½ï¿½Ý£ï¿½ï¿½ï¿½Ã²ï¿½ï¿½ï¿½ï¿½Ã£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½Ü³ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó°ï¿½ï¿½delayï¿½ï¿½ï¿½ï¿½ï¿½Äµï¿½ï¿½ï¿½ï¿½ï¿½È·ï¿½ï¿½ï¿½
+		2.delayms1ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½Ã¹Ø±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½
+		3.PIDÃ¿ï¿½ï¿½ï¿½50msï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½PIDï¿½ï¿½ï¿½ã£¬ï¿½ï¿½25msï¿½ï¿½ï¿½ï¿½ï¿½Ðµï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½î£¨ï¿½ï¿½Ê±ï¿½ÐµÈ£ï¿½
+		4.IMUÃ¿ï¿½Î½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½Ð¶ï¿½
+		5.ï¿½ï¿½Ý®ï¿½É¸ï¿½stm32ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢Ê±ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½
+		6.ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¢ï¿½Ð¶ï¿½
+		7.ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã¿ï¿½ï¿½20msï¿½ï¿½Ê±ï¿½ï¿½ï¿½Æ½Ç¶ï¿½
 */
 	delay_init(168);
-	board_init();  //ÅäÖÃcan×ÜÏßÐ­Òé
-	LED_Init();  //ÅäÖÃLEDÖ¸Ê¾µÆ
-	OLED_Init();   //ÔÝÊ±²»ÆôÓÃOLED //OLEDÖÐ¶ÏºÍTIM5°ó¶¨ÔÚÒ»Æð£¨Á½¸ö±ØÐëÍ¬Ê±ÓÃ£©
-	Timer6_Init(); //delayms1µÄÊ±ÖÓ
-	PWM_Init();	  //Ê¹ÓÃ¶¨Ê±Æ÷¶þ£¬¿ªÆôÖÐ¶Ï£¬ÊµÊ±¿ØÖÆ¶æ»ú½Ç¶È
+	board_init();  //ï¿½ï¿½ï¿½ï¿½canï¿½ï¿½ï¿½ï¿½Ð­ï¿½ï¿½
+	LED_Init();  //ï¿½ï¿½ï¿½ï¿½LEDÖ¸Ê¾ï¿½ï¿½
+	OLED_Init();   //ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½OLED //OLEDï¿½Ð¶Ïºï¿½TIM5ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í¬Ê±ï¿½Ã£ï¿½
+	Timer6_Init(); //delayms1ï¿½ï¿½Ê±ï¿½ï¿½
+	PWM_Init();	  //Ê¹ï¿½Ã¶ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶Ï£ï¿½ÊµÊ±ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½Ç¶ï¿½
 	uart5_init(9600);
-	uart6_init(9600);//´®¿ÚÆÁÓÃµÄUART6
-	Serial_Init();	//Í¨Ñ¶´®¿Ú1³õÊ¼»¯£¬ÓÃUART1
-	Swith_Init();   //¿ª¹Ø³õÊ¼»¯
-	imu_init();     //Ê¹ÓÃUART2
-	PIDInit();		//ÓÃ¶¨Ê±Æ÷ÊµÏÖ¶¨Ê±ÖÐ¶Ï//ÖÜÆÚÎª50ms//¸ÃÖÐ¶Ï×îºÃ²»Òª±»±ðµÄÖÐ¶Ï´ò¶Ï
-	Key_EXTI_Init();//°´¼üÖÐ¶Ï//ÏòÊ÷Ý®ÅÉ·¢ËÍÖØÆôÃüÁî
-  clear_ckp();    //Çå¿Õ´®¿ÚÆÁ
+	uart6_init(9600);//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ãµï¿½UART6
+	Serial_Init();	//Í¨Ñ¶ï¿½ï¿½ï¿½ï¿½1ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½UART1
+	Swith_Init();   //ï¿½ï¿½ï¿½Ø³ï¿½Ê¼ï¿½ï¿½
+	imu_init();     //Ê¹ï¿½ï¿½UART2
+	PIDInit();		//ï¿½Ã¶ï¿½Ê±ï¿½ï¿½Êµï¿½Ö¶ï¿½Ê±ï¿½Ð¶ï¿½//ï¿½ï¿½ï¿½ï¿½Îª50ms//ï¿½ï¿½ï¿½Ð¶ï¿½ï¿½ï¿½Ã²ï¿½Òªï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶Ï´ï¿½ï¿½
+	Key_EXTI_Init();//ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½//ï¿½ï¿½ï¿½ï¿½Ý®ï¿½É·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+  clear_ckp();    //ï¿½ï¿½Õ´ï¿½ï¿½ï¿½ï¿½ï¿½
 		
 		
 		
@@ -85,11 +85,11 @@ int main(void)
 		HMISends(tjcstr);
 		HMISendb(0xff);
 
-	dianji_move_flag = 1;//Ê¹ÄÜµç»úµÄÔË¶¯
-	TIM_SetCompare1(TIM3,0);  //¹Ø±Õ²¹¹âµÆ
+	dianji_move_flag = 1;//Ê¹ï¿½Üµï¿½ï¿½ï¿½ï¿½ï¿½Ë¶ï¿½
+	TIM_SetCompare1(TIM3,0);  //ï¿½Ø±Õ²ï¿½ï¿½ï¿½ï¿½
 	
 	
-//**************************²âÊÔ´úÂë***************************//
+//**************************ï¿½ï¿½ï¿½Ô´ï¿½ï¿½ï¿½***************************//
 //car_move1(0,1000,150,200);
 //car_move2(150,0,150,150);
 //delay_ms(3000);
@@ -232,7 +232,7 @@ void yuantai_na(uint8_t task)
 		set_zhuashou_kai();	
 		move_all(63.0f,1000,200   ,48,2000,220   ,295,13);
 		set_zhuashou_he();   
-		move_all(20.0f,1000,200   ,25,2000,220   ,295,13);//**********¶àÒ»¸ö»ØÊÕµÄ¶¯×÷
+		move_all(20.0f,1000,200   ,25,2000,220   ,295,13);//**********ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ÕµÄ¶ï¿½ï¿½ï¿½
 		move_all(-20.0f,1000,200   ,25,2000,220   ,135,13);
 		move_all(-48.0f,1000,200   ,25,2000,220   ,135,13);
 		move_all(-48.0f,1000,200   ,33,2000,220   ,135,13);
@@ -272,7 +272,7 @@ void yuantai_na2(uint8_t task)
 	}else if(task == 0x02){
 		move_all(63.0f,1000,200   ,48,2000,220   ,295,13);
 		set_zhuashou_he();   
-		move_all(20.0f,1000,200   ,25,2000,220   ,295,13);//**********¶àÒ»¸ö»ØÊÕµÄ¶¯×÷
+		move_all(20.0f,1000,200   ,25,2000,220   ,295,13);//**********ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ÕµÄ¶ï¿½ï¿½ï¿½
 		move_all(-20.0f,1000,200   ,25,2000,220   ,135,13);
 		move_all(-48.0f,1000,200   ,25,2000,220   ,135,13);
 		move_all(-48.0f,1000,200   ,33,2000,220   ,135,13);
@@ -287,10 +287,10 @@ void yuantai_na2(uint8_t task)
 }
 
 
-//if task_choose = 0x01,ÔòÎª¼ì²â×ªÅÌ´¦µÄÎï¿éÔ²ÐÄ
-//if task_choose = 0x02,ÔòÎª¼ì²âÂë¶â´¦µÄÎï¿éÔ²ÐÄ
-//distance ÎªÎï¿éµÄ¸ß¶È
-//color ÎªÑ¡Ôñ¶¨±êµ½ÄÄÒ»¸öÎï¿éµÄÎ»ÖÃ Îª0±íÊ¾ÈÎºÎÎ»ÖÃ¶¼¿ÉÒÔ
+//if task_choose = 0x01,ï¿½ï¿½Îªï¿½ï¿½ï¿½×ªï¿½Ì´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô²ï¿½ï¿½
+//if task_choose = 0x02,ï¿½ï¿½Îªï¿½ï¿½ï¿½ï¿½ï¿½â´¦ï¿½ï¿½ï¿½ï¿½ï¿½Ô²ï¿½ï¿½
+//distance Îªï¿½ï¿½ï¿½Ä¸ß¶ï¿½
+//color ÎªÑ¡ï¿½ñ¶¨±êµ½ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½ï¿½ Îª0ï¿½ï¿½Ê¾ï¿½Îºï¿½Î»ï¿½Ã¶ï¿½ï¿½ï¿½ï¿½ï¿½
 void transfer_position_wukuai(uint8_t task_choose,float distance,uint8_t color)
 {
 	x_origin = (Serial_RxPacket[0]-0x30)*1000+(Serial_RxPacket[1]-0x30)*100+(Serial_RxPacket[2]-0x30)*10+(Serial_RxPacket[3]-0x30);
@@ -307,7 +307,7 @@ void transfer_position_wukuai(uint8_t task_choose,float distance,uint8_t color)
 	}
 	direct_x = x_origin * bilichi;   
 	direct_y = y_origin * bilichi;
-	//ÏÂÃæµÄ´úÂë½ö½öºÍÑÕÉ«ÓÐ¹Ø
+	//ï¿½ï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É«ï¿½Ð¹ï¿½
 	if(color == 2){
 		if(Serial_RxPacket[8] == 0x32){
 		}else if(Serial_RxPacket[8] == 0x31){
@@ -336,23 +336,23 @@ void transfer_position_wukuai(uint8_t task_choose,float distance,uint8_t color)
 }
 
 
-//ÓëÈÎÎñÂëÏà¹ØÁª£¬¶¨Î»É«»·Î»ÖÃ
+//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»É«ï¿½ï¿½Î»ï¿½ï¿½
 //fenbian_choose
-	//fenbian_choose == 0x01 ÔòÎªÐ¡·Ö±æÂÊ
-	//fenbian_choose == 0x02 ÔòÎª´ó·Ö±æÂÊ
+	//fenbian_choose == 0x01 ï¿½ï¿½ÎªÐ¡ï¿½Ö±ï¿½ï¿½ï¿½
+	//fenbian_choose == 0x02 ï¿½ï¿½Îªï¿½ï¿½Ö±ï¿½ï¿½ï¿½
 //task_num 
-	//Ñ¡ÔñÒÆ¶¯µ½¶ÔÓ¦ÑÕÉ«µÄÎ»ÖÃ ÎªÁã±íÊ¾ÓëÑÕÉ«ÎÞ¹Ø
+	//Ñ¡ï¿½ï¿½ï¿½Æ¶ï¿½ï¿½ï¿½ï¿½ï¿½Ó¦ï¿½ï¿½É«ï¿½ï¿½Î»ï¿½ï¿½ Îªï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½É«ï¿½Þ¹ï¿½
 void transfer_position_sehuan(uint8_t fenbian_choose,uint8_t task_num)
 {
 	x_origin = (Serial_RxPacket[0]-0x30)*1000+(Serial_RxPacket[1]-0x30)*100+(Serial_RxPacket[2]-0x30)*10+(Serial_RxPacket[3]-0x30);
 	y_origin = (Serial_RxPacket[4]-0x30)*1000+(Serial_RxPacket[5]-0x30)*100+(Serial_RxPacket[6]-0x30)*10+(Serial_RxPacket[7]-0x30);
-	float x_center,y_center;//x¼ÓÎï¿éÓÒÒÆ//y+Îï¿éÏÂÒÆ
+	float x_center,y_center;//xï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½//y+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	if(fenbian_choose == 0x01){
 		x_center =316;y_center =238;
 		x_origin = x_origin - x_center;
 		y_origin = y_origin - y_center;
 		
-		direct_x = x_origin * 1.1805555;    //Êµ¼Ê³ß´çÏµÊý
+		direct_x = x_origin * 1.1805555;    //Êµï¿½Ê³ß´ï¿½Ïµï¿½ï¿½
 		direct_y = y_origin * 1.1805555;
 	}else if(fenbian_choose == 0x02){
 		if(Serial_RxPacket[8] == 0x31){
@@ -365,7 +365,7 @@ void transfer_position_sehuan(uint8_t fenbian_choose,uint8_t task_num)
 		x_origin = x_origin - x_center;
 		y_origin = y_origin - y_center;
 	
-		direct_x = x_origin * 0.29239766;    //Êµ¼Ê³ß´çÏµÊý
+		direct_x = x_origin * 0.29239766;    //Êµï¿½Ê³ß´ï¿½Ïµï¿½ï¿½
 		direct_y = y_origin * 0.29239766;
 	}
 	
@@ -412,12 +412,12 @@ void jixie_reset(void)
 }
 
 /*
-	ÏÈ·¢ËÍÃüÁî£¬µÈ´ýÒ»¶ÎÊ±¼äÈç¹û»¹Ã»ÓÐ·µ»Ø
-	Ôò¼ÌÐø·¢ËÍ£¬Ö±µ½ÊÕµ½ÐÅÏ¢£¬Á¢¿ÌÍË³ö
+	ï¿½È·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½î£¬ï¿½È´ï¿½Ò»ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ã»ï¿½Ð·ï¿½ï¿½ï¿½
+	ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í£ï¿½Ö±ï¿½ï¿½ï¿½Õµï¿½ï¿½ï¿½Ï¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ë³ï¿½
 */
 void wait_send_shumeipai(uint8_t message,uint16_t time)
 {
-	Serial_GetRxFlag();//Çå¿Õ±êÖ¾Î»
+	Serial_GetRxFlag();//ï¿½ï¿½Õ±ï¿½Ö¾Î»
 	Serial_SendByte(message);
 	while(1){
 		if(Serial_GetRxFlag() == 1){
@@ -426,7 +426,7 @@ void wait_send_shumeipai(uint8_t message,uint16_t time)
 	}
 }
 
-//¶¨Ê±ÏÔÊ¾OLEDºÍLCDÏÔÊ¾ÆÁ
+//ï¿½ï¿½Ê±ï¿½ï¿½Ê¾OLEDï¿½ï¿½LCDï¿½ï¿½Ê¾ï¿½ï¿½
 void TIM5_IRQHandler(void)
 {
 	if (TIM_GetITStatus(TIM5, TIM_IT_Update) == SET)
@@ -447,5 +447,5 @@ void clear_ckp(void)
 {
 	sprintf(tjcstr, "t0.txt=\"  \"");
 			HMISends(tjcstr);
-	        HMISendb(0xff);//ÔÚÏÔÊ¾ÆÁÉÏÃæÏÔÊ¾ÈÎÎñ
+	        HMISendb(0xff);//ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï¿½
 }

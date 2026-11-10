@@ -14,7 +14,7 @@ typedef struct {
     void (*SetServoAngle)(float angle);  // 设置当前角度的函数指针
 } Servo_t;
 
-Servo_t yuantai = {60.84f, 0.0f, 60.84f, 0, 0, 0, Servo_SetAngle4_yuntai};
+Servo_t yuantai = {60.8f, 0.0f, 60.84f, 0, 0, 0, Servo_SetAngle4_yuntai};
 Servo_t zhuashou = {2.7f, 2.7f, 2.7f, 0, 0, 0, Servo_SetAngle2_zhuashou};
 Servo_t wukuaipingtai = {20.0f, 20.0f, 20.0f, 0, 0, 0,Servo_SetAngle3_wukuaipingtai};
 
