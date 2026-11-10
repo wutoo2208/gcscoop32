@@ -14,8 +14,8 @@ typedef struct {
     void (*SetServoAngle)(float angle);  // 设置当前角度的函数指针
 } Servo_t;
 
-Servo_t yuantai = {60.8f, 0.0f, 60.84f, 0, 0, 0, Servo_SetAngle4_yuntai};
-Servo_t zhuashou = {2.7f, 2.7f, 2.7f, 0, 0, 0, Servo_SetAngle2_zhuashou};
+Servo_t yuantai = {102.1f	,102.1f,102.1f, 0, 0, 0, Servo_SetAngle4_yuntai};
+Servo_t zhuashou = {60, 60, 60, 0, 0, 0, Servo_SetAngle2_zhuashou};
 Servo_t wukuaipingtai = {20.0f, 20.0f, 20.0f, 0, 0, 0,Servo_SetAngle3_wukuaipingtai};
 
 void PWM_Init(void)
@@ -73,9 +73,9 @@ void PWM_Init(void)
 	
 	/* TIM使能 */
 	TIM_Cmd(TIM2, ENABLE);			// 使能TIM2，定时器开始运行
-	TIM_SetCompare2(TIM2, 520);		// 抓手
+	TIM_SetCompare2(TIM2, 944);		// 抓手
 	TIM_SetCompare3(TIM2, 648);		// 物块平台
-	TIM_SetCompare4(TIM2, 838);		// 云台
+	TIM_SetCompare4(TIM2, 1067	);		// 云台 836
 	TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
 }
 
