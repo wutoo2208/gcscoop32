@@ -77,474 +77,45 @@ int main(void)
 	imu_init();     //使用UART2
 	PIDInit();		//用定时器实现定时中断//周期为50ms//该中断最好不要被别的中断打断
 	Key_EXTI_Init();//按键中断//向树莓派发送重启命令
-    clear_ckp();    //清空串口屏
+  clear_ckp();    //清空串口屏
 		
 		
 		
-		sprintf(tjcstr, "t0.txt=\"111111\"");
+		sprintf(tjcstr, "t0.txt=\"00000\"");
 		HMISends(tjcstr);
 		HMISendb(0xff);
 
 	dianji_move_flag = 1;//使能电机的运动
 	TIM_SetCompare1(TIM3,0);  //关闭补光灯
+	
+	
 //**************************测试代码***************************//
+//car_move1(0,1000,150,200);
+//car_move2(150,0,150,150);
+//delay_ms(3000);
 
 
 
-move_all1(-120.0f,1000,200   ,0,2000,200   ,278,13);
-delay_ms (3000);
-move_all1(-120.0f,1000,200   ,0,2000,200   ,200,13);
+//set_zhuashou_kai();
+//delay_ms (3000);
+//set_zhuashou_he();
 
-
-set_zhuashou_kai();
-delay_ms (3000);
-set_zhuashou_he();
-
-
-
-	while(swith_out() == 1){		
-		LED_Toggle2();
-		delay_ms1(50);
-	}//树莓派已经准备好，按下开关即可启动
-	move_all(-120.0f,1000,200   ,0,2000,200   ,278.0f,13);
-	set_zhuashou_kai();
-	jixie_reset();
-	while(1){}
-//*************************第一轮*************************//
-	while(1){
-		LED_Toggle2();
-		delay_ms1(200);
-		if((Serial_RxPacket[0]==0x39) && (Serial_RxPacket[1]==0x38)){
-			break;
-	    }
-	}
-//**************************指示灯闪烁，可以开始***************************//
-	while(swith_out() == 1){		
-		LED_Toggle2();
-		delay_ms1(50);
-	}//树莓派已经准备好，按下开关即可启动
-	mypid.integral = 0;
-	WHT101_ANGLEZCali();//101z轴置零
-	Serial_GetRxFlag();Serial_SendByte(0x31);
-//***************************第一部分，识别二维码并显示，大致移动到原料区*********************//	
-	//扫二维码
-	car_move2(150,0,150,150);
-	car_move1(0,-530,150,200);
-    //读取树莓派信息	
-	while(1){
-		if (Serial_GetRxFlag() == 1){   //收到数据包
-			   sprintf(tjcstr, "t0.txt=\"%d%d%d+%d%d%d+%d%d%d+%d%d%d \"",
-										Serial_RxPacket[0]-0x30,Serial_RxPacket[1]-0x30,Serial_RxPacket[2]-0x30,            //串口接收任务
-										Serial_RxPacket[4]-0x30,Serial_RxPacket[5]-0x30,Serial_RxPacket[6]-0x30,
-										Serial_RxPacket[8]-0x30,Serial_RxPacket[9]-0x30,Serial_RxPacket[10]-0x30,
-										Serial_RxPacket[12]-0x30,Serial_RxPacket[13]-0x30,Serial_RxPacket[14]-0x30);
-				HMISends(tjcstr);
-	            HMISendb(0xff);//在显示屏上面显示任务
-				break;
-			  }
-	}
-  task[0]= Serial_RxPacket[0]-0x30;  task[1] = Serial_RxPacket[1]-0x30;  task[2] = Serial_RxPacket[2]-0x30;
-	task[3]= Serial_RxPacket[4]-0x30;  task[4] = Serial_RxPacket[5]-0x30;  task[5] = Serial_RxPacket[6]-0x30;
-	task[6]= Serial_RxPacket[8]-0x30;  task[7] = Serial_RxPacket[9]-0x30;  task[8] = Serial_RxPacket[10]-0x30;
-	task[9]= Serial_RxPacket[12]-0x30;  task[10]= Serial_RxPacket[13]-0x30;  task[11] = Serial_RxPacket[14]-0x30;
-	set_wukuaipingtai_weizhi(0x01);
-//****************************调整(亮度等参数)****************************//
-	TIM_SetCompare1(TIM3,300);
-//********************第二部分，识别物块颜色，按照指定的顺序搬运**************************//
-	//复位到识别的位置
-	move_all1(-120.0f,1000,200   ,0,2000,200   ,278,13);
-	set_zhuashou_kai();
+//	move_all(-48.0f,1000,200   ,25,1000,200   ,135,13);
 	
-	car_move1(0,-1000+90,150,200);
-	move_all1(40.0f,1000,200   ,0,2000,200   ,278,13);
-	//提前发送命令2
-	Serial_GetRxFlag();Serial_SendByte(0x32);
-	car_move2(-30,0,100,100);	
-	while(1){
-		while(1){
-			if(Serial_GetRxFlag() == 1){
-				break;  //是wait发送的分解
-			}
-		}
-		//0x01代表选择的是转盘上的物块，70.0f是物块的高度，0x00代表不选择颜色
-		transfer_position_wukuai(0x01,70.0f,Serial_RxPacket[0]);  //
-		car_move_distance(direct_x,direct_y,100,80);
-		if(Serial_RxPacket[8] != 0x34){
-			break;
-		}else{
-			wait_send_shumeipai(0x32,15000);
-		}
-	}
-	move_all(60.0f,1000,200   ,0,2000,200   ,278,13);
-	wait_send_shumeipai(0x33,20000);  //识别圆盘上要抓物块的顺序
-	ypcode[0]= task[0];ypcode[1] = task[1];ypcode[2] = task[2];
-	ypcode[3]= task[6];ypcode[4] = task[7];ypcode[5] = task[8];
-	//1.圆台拿走第一个物块
-	set_wukuaipingtai_weizhi(0x01);
-	yuantai_na(ypcode[0]);
-	
-	//2.圆台拿走第二个物块
-	set_wukuaipingtai_weizhi(0x02);
-	yuantai_na1(ypcode[1]);   //达到指定的识别的位置
-	//判断物块是否静止
-	wait_send_shumeipai(0x35,30000);
-	while(1){
-		if(Serial_RxPacket[0] == 0x39 && Serial_RxPacket[1] == 0x38){
-			break;
-		}
-	}Serial_RxPacket[0] = 0x30;Serial_RxPacket[1] = 0x30;
-	yuantai_na2(ypcode[1]);  //一旦识别到物块静止，抓物块到物块平台上
+//	move_all(45.0f,1000,200   ,45,1000,200   ,190,13);
+//	move_all(3.0f+5.8f,1000,200   ,132,1000,200   ,317.0f+1.4f,13);
+		set_zhuashou_kai(); 
+		delay_ms(1000);
+		set_zhuashou_he();  
+		move_all(-45.0f,1000,220   ,0,2000,220   ,130,13);
+		move_all(-45.0f,1000,220   ,10,2000,220   ,130,13);
 		
-	//3.圆台拿走第三个物块
-	set_wukuaipingtai_weizhi(0x03);
-	yuantai_na1(ypcode[2]);	 //达到指定的识别的位置
-	//判断物块是否静止
-	wait_send_shumeipai(0x36,30000);
-	while(1){
-		if(Serial_RxPacket[0] == 0x39 && Serial_RxPacket[1] == 0x38){
-			break;
-		}
-	}Serial_RxPacket[0] = 0x30;Serial_RxPacket[1] = 0x30;	
-	yuantai_na2(ypcode[2]);	 //一旦识别到物块静止，抓物块到物块平台上
+//		move_all(-48.0f,1000,200   ,0,2000,220   ,130,13);
+//		move_all(-48.0f,1000,200   ,0,2000,220   ,130,13);
+		set_zhuashou_kai();	 
 
-	TIM_SetCompare1(TIM3,0); //关闭补光灯
-	//复位到识别的位置
-	set_wukuaipingtai_weizhi(0x01);
-	move_all1(-120.0f,1000,200   ,0,1000,200   ,278,13);
-	set_zhuashou_kai();
-//***************************到下一个区域**************************//	
-	//到粗加工区
-	PID_move(-30,0,0,400,0,1);//回倒车
-	delay_ms1(200);
-	car_move1(0,400,150,200);
-	
-	mypid.integral = 0;PID_move(0,0,0,1000,90,0);//在原地旋转
-	PID_move(0,0,0,1000,90,3);
-	
-	car_move1(0,-1700,150,250);//快速通过
-	
-	mypid.integral = 0;PID_move(0,0,0,1000,-180,0);//在粗加工区原地旋转
-	PID_move(0,0,0,1000,-180,3);
-//****************************调整(亮度等参数)****************************//
-	TIM_SetCompare1(TIM3,300);
-//*************************第三部分，色环位置拿并放置**********************//
-	while(1){
-		wait_send_shumeipai(0x37,10000);//如果发送了信息，但是一直没有得到回应，那么就一直发送
-		transfer_position_sehuan(0x01,0x02);
-		car_move_distance(direct_x,direct_y,180,150);
-		if(Serial_RxPacket[8] != 0x34){
-			break;
-		}
-		//如果返回了没看到的信息，那就微微调整一下，再重复给树莓派发送
-		//反之如果返回了看到的信息（也即第九位并非0x34）,则可以退出该程序
-	}
-	PID_move(0,0,0,1000,-180.0f,4);  //暂时按照没有角度矫正的思路调试
-	//精细定标
-	{
-		wait_send_shumeipai(0x38,10000);//如果发送了信息，但是一直没有得到回应，那么就一直发送
-		transfer_position_sehuan(0x02,0x02);	
-		if(Serial_RxPacket[8] == 0x34){
-			car_move_distance(0,0,70,50);//如果没有看到颜色，那就不移动
-		}else{	
-			car_move_distance(direct_x,direct_y,130,100);//如果看到颜色，那就按照正常的方式移动
-		}
-	}//至此第二次定标完成
-	
-	//物块平台抓物块
-	move_all(-48.0f,1000,200   ,33,1000,200   ,135,13);
-	set_zhuashou_he();
-	//色换放置第一个
-	fangzhi(task[3]);	
-	set_wukuaipingtai_weizhi(0x02);
-	delay_ms1((int)shengjiang_control(33,2000,240));
-	//物块平台抓物块
-	move_all(-48.0f,1000,200   ,33,1000,200   ,135,13);
-	set_zhuashou_he();
-	
-	//色环放置第二个	
-	fangzhi(task[4]);
-	set_wukuaipingtai_weizhi(0x03);
-	delay_ms1((int)shengjiang_control(33,2000,240));
-	//物块平台抓物块
-	move_all(-48.0f,1000,200   ,33,2000,200   ,135,13);
-	set_zhuashou_he();
-	
-	//色环放置第三个	
-	fangzhi(task[5]);
-	set_wukuaipingtai_weizhi(0x01);
-	//色环拿一
-	na(task[3]);
-	set_wukuaipingtai_weizhi(0x02);
-	//色环拿二
-	na(task[4]);
-	set_wukuaipingtai_weizhi(0x03);
-	//色环拿三
-	na(task[5]);
-	//复位到识别的位置
-	set_wukuaipingtai_weizhi(0x01);
-	move_all1(-120.0f,1000,200   ,0,1000,200   ,278,13);
-	set_zhuashou_kai();
-//*************************到下一个区域***************************//	
-	PID_move(-30,0,0,300,-180,1);//在粗加工区回退
-	PID_move(0,0,0,500,-180,3);
-	car_move1(140,140+680,180,180);//从绿色出发
-	delay_ms1(100);
-	
-	mypid.integral = 0;PID_move(0,0,0,1000,90,0);
-	PID_move(0,0,0,1000,90,3);
-	
-	car_move1(140,140+620,180,150);
-//****************************调整(亮度等参数)****************************//
-	TIM_SetCompare1(TIM3,300);
-//*************************第四部分，色环位置放置**********************//
-	while(1){
-		wait_send_shumeipai(0x37,10000);//如果发送了信息，但是一直没有得到回应，那么就一直发送
-		transfer_position_sehuan(0x01,0x02);
-		car_move_distance(direct_x,direct_y,180,150);
-		if(Serial_RxPacket[8] != 0x34){
-			break;
-		}
-		//如果返回了没看到的信息，那就微微调整一下，再重复给树莓派发送
-		//反之如果返回了看到的信息（也即第九位并非0x34）,则可以退出该程序
-	}
-	PID_move(0,0,0,1000,90.0f,4);
-	//精细定标
-	{
-		wait_send_shumeipai(0x38,10000);//如果发送了信息，但是一直没有得到回应，那么就一直发送
-		transfer_position_sehuan(0x02,0x02);	
-		if(Serial_RxPacket[8] == 0x34){
-			car_move_distance(0,0,70,50);//如果没有看到颜色，那就不移动
-		}else{
-			car_move_distance(direct_x,direct_y,130,100);//如果看到颜色，那就按照正常的方式移动
-		}
-	}//至此第二次定标完成
-	
-	//物块平台抓物块
-	move_all(-48.0f,1000,200   ,33,1000,200   ,135,13);
-	set_zhuashou_he();
-	//色环放置第一个
-	fangzhi(task[3]);
-	set_wukuaipingtai_weizhi(0x02);
-	delay_ms1((int)shengjiang_control(33,2000,240));
-	
-	//物块平台抓物块
-	move_all(-48.0f,1000,200   ,33,1000,200   ,135,13);
-	set_zhuashou_he();
-	//色环放置第二个	
-	fangzhi(task[4]);
-	set_wukuaipingtai_weizhi(0x03);
-	delay_ms1((int)shengjiang_control(33,2000,240));
-	
-	//物块平台抓物块
-	move_all(-48.0f,1000,200   ,33,2000,200   ,135,13);
-	set_zhuashou_he();
-	//放置第三个	
-	fangzhi(task[5]);
-	
-	//复位到识别的位置
-	set_wukuaipingtai_weizhi(0x01);
-	move_all1(-120.0f,1000,200   ,0,1000,200   ,278,13);
-	set_zhuashou_kai();
-//*************************第五部分，回到圆盘**********************//
-	PID_move(-30,0,0,300,90,1);//回退
-	delay_ms1(100);
-	//回到原料
-	car_move1(140,220+650,180,180);//从绿色出发
-	
-	mypid.integral = 0;PID_move(0,0,0,1000,0,0);
-	PID_move(0,0,0,1000,0,3);
-	
-	car_move1(140,370+20,180,180);
-//*****************************第二轮**************************//
-//****************************调整(亮度等参数)****************************//
-	TIM_SetCompare1(TIM3,300);
-//********************第二部分，识别物块颜色，按照指定的顺序搬运**************************//
-	move_all1(40.0f,1000,200   ,0,2000,200   ,278,13);
-	//提前发送0x61
-	Serial_GetRxFlag();Serial_SendByte(0x61);
-	PID_move(30,0,0,300,0,1);//在粗加工区往前靠
-	delay_ms1(100);	
-	while(1){
-		while(1){
-			if(Serial_GetRxFlag() == 1){
-				break;  //是wait发送的分解版
-			}
-		}
-		transfer_position_wukuai(0x01,70.0f,0x00);
-		car_move_distance(direct_x,direct_y,100,80);//至此第一次定标完成
-		if(Serial_RxPacket[8] != 0x34){
-			break;
-		}else{
-			wait_send_shumeipai(0x61,15000);
-		}
-	}
-	move_all(60.0f,1000,200   ,0,2000,200   ,278,13);
-	wait_send_shumeipai(0x34,20000);
-	
-	
-	//1.圆台拿走第一个物块
-	set_wukuaipingtai_weizhi(0x01);
-	yuantai_na(ypcode[3]);
-	
-	//2.圆台拿走第二个物块
-	set_wukuaipingtai_weizhi(0x02);
-	yuantai_na1(ypcode[4]);   //达到指定的识别的位置
-		//判断物块是否静止
-	wait_send_shumeipai(0x62,30000);
-	while(1){
-		if(Serial_RxPacket[0] == 0x39 && Serial_RxPacket[1] == 0x38){
-			break;
-		}
-	}Serial_RxPacket[0] = 0x30;Serial_RxPacket[1] = 0x30;
-	yuantai_na2(ypcode[4]);  //一旦识别到物块静止，抓物块到物块平台上
-		
-	//3.圆台拿走第三个物块
-	set_wukuaipingtai_weizhi(0x03);
-	yuantai_na1(ypcode[5]);	 //达到指定的识别的位置
-	wait_send_shumeipai(0x63,30000);
-	while(1){
-		if(Serial_RxPacket[0] == 0x39 && Serial_RxPacket[1] == 0x38){
-			break;
-		}
-	}Serial_RxPacket[0] = 0x30;Serial_RxPacket[1] = 0x30;	
-	yuantai_na2(ypcode[5]);	 //一旦识别到物块静止，抓物块到物块平台上
 
-	TIM_SetCompare1(TIM3,0); //关闭补光灯
-	//复位到识别的位置
-	set_wukuaipingtai_weizhi(0x01);
-	move_all1(-120.0f,1000,200   ,0,1000,200   ,278,13);
-	set_zhuashou_kai();
-//***************************到下一个区域**************************//	
-	//到粗加工区
-	PID_move(-30,0,0,400,0,1);//回倒车
-	delay_ms1(200);
-	car_move1(0,400,150,200);
-	
-	mypid.integral = 0;PID_move(0,0,0,1000,90,0);//在原地旋转
-	PID_move(0,0,0,1000,90,3);
-	
-	car_move1(0,-1700,150,250);//快速通过
-	
-	mypid.integral = 0;PID_move(0,0,0,1000,-180,0);//在粗加工区原地旋转
-	PID_move(0,0,0,1000,-180,3);
-//****************************调整(亮度等参数)****************************//
-	TIM_SetCompare1(TIM3,300);
-//*************************第三部分，色环位置拿并放置**********************//
-	while(1){
-		wait_send_shumeipai(0x37,20000);//如果发送了信息，但是一直没有得到回应，那么就一直发送
-		transfer_position_sehuan(0x01,0x02);
-		car_move_distance(direct_x,direct_y,180,150);
-		if(Serial_RxPacket[8] != 0x34){
-			break;
-		}
-		//如果返回了没看到的信息，那就微微调整一下，再重复给树莓派发送
-		//反之如果返回了看到的信息（也即第九位并非0x34）,则可以退出该程序
-	}
-	PID_move(0,0,0,1000,-180.0f,4);
-	//精细定标
-	{
-		wait_send_shumeipai(0x38,20000);//如果发送了信息，但是一直没有得到回应，那么就一直发送
-		transfer_position_sehuan(0x02,0x02);	
-		if(Serial_RxPacket[8] == 0x34){
-			car_move_distance(0,0,70,50);//如果没有看到颜色，那就不移动
-		}else{
-			car_move_distance(direct_x,direct_y,130,100);//如果看到颜色，那就按照正常的方式移动
-		}
-	}//至此第二次定标完成
-	//物块平台抓物块
-	move_all(-48.0f,1000,200   ,33,1000,200   ,135,13);
-	set_zhuashou_he();
-	//色环放置第一个
-	fangzhi(task[9]);
-	set_wukuaipingtai_weizhi(0x02);
-	delay_ms1((int)shengjiang_control(33,2000,240));
-	move_all(-48.0f,1000,200   ,33,1000,200   ,135,13);//物块平台抓物块
-	set_zhuashou_he();
-	
-	//色环放置第二个	
-	fangzhi(task[10]);
-	set_wukuaipingtai_weizhi(0x03);
-	delay_ms1((int)shengjiang_control(33,2000,240));
-	move_all(-48.0f,1000,200   ,33,2000,200   ,135,13);//物块平台抓物块
-	set_zhuashou_he();
-	
-	//色环放置第二个	
-	fangzhi(task[11]);
-	set_wukuaipingtai_weizhi(0x01);
-	//拿一
-	na(task[9]);
-	set_wukuaipingtai_weizhi(0x02);
-	//拿二
-	na(task[10]);
-	set_wukuaipingtai_weizhi(0x03);
-	//拿三
-	na(task[11]);
-	//复位到识别的位置
-	set_wukuaipingtai_weizhi(0x01);
-	move_all1(-120.0f,1000,200   ,0,1000,200   ,278,13);
-	set_zhuashou_kai();
-//*************************到下一个区域***************************//	
-	PID_move(-30,0,0,300,-180,1);//在粗加工区回退
-	PID_move(0,0,0,500,-180,3);
-	car_move1(140,140+680,180,180);//从绿色出发
-	delay_ms1(100);
-	
-	mypid.integral = 0;PID_move(0,0,0,1000,90,0);
-	PID_move(0,0,0,1000,90,3);
-	
-	car_move1(140,140+620,180,150);
-//****************************调整(亮度等参数)****************************//
-	TIM_SetCompare1(TIM3,300);
-//********************************码垛****************************
-	while(1){
-		wait_send_shumeipai(0x39,10000);	
-		transfer_position_wukuai(0x02,70.0f,0x02);
-		car_move_distance(direct_x,direct_y,180,150);//至此第一次定标完成
-		delay_ms1(200);
-		if(Serial_RxPacket[8] != 0x34){
-			break;
-		}
-	}
-	{
-		wait_send_shumeipai(0x39,10000);		
-		transfer_position_wukuai(0x02,70.0f,0x02);
-		if(Serial_RxPacket[8] == 0x34){
-			car_move_distance(0,0,70,50);
-		}else{	
-			car_move_distance(direct_x,direct_y,180,150);//至此第二次定标完成
-		}
-	}
-	move_all(-48.0f,1000,200   ,33,1000,200   ,135,13);//物块平台抓物块
-	set_zhuashou_he();
-	//放置第一个
-	fangzhi_maduo(task[0]);
-	set_wukuaipingtai_weizhi(0x02);
-	delay_ms1((int)shengjiang_control(33,2000,240));
-	move_all(-48.0f,1000,200   ,33,1000,200   ,135,13);//物块平台抓物块
-	set_zhuashou_he();
-	
-	//放置第二个	
-	fangzhi_maduo(task[1]);
-	set_wukuaipingtai_weizhi(0x03);
-	delay_ms1((int)shengjiang_control(33,2000,240));
-	move_all(-48.0f,1000,200   ,33,2000,200   ,135,13);//物块平台抓物块
-	set_zhuashou_he();
-	
-	//放置第三个
-	fangzhi_maduo(task[2]);
-	set_wukuaipingtai_weizhi(0x01);
-	//回到启停区
-	PID_move(-30,0,0,300,90,1);//回退
-	car_move1(140,220+650,180,180);//从绿色出发
-	move_all1(0.0f,1000,200   ,0,1000,200   ,64.8,13);
-	
-	mypid.integral = 0;PID_move(0,0,0,1000,0,0);
-	PID_move(0,0,0,1000,0,3);
-	
-	car_move1(140,2000-150,180,180);
-	car_move2(-130,0,150,150);//在粗加工区往前靠
-	
-	jixie_reset();
+
 }
 
 void fangzhi_green(void)   //2
@@ -585,18 +156,18 @@ void fangzhi(uint8_t task)
 
 void fangzhi_maduo(uint8_t task)
 {
-	if(task == 0x01){
+	if(task == 0x03){   //red   3
 		move_all(-48.0f,1000,200   ,25,1000,200   ,135,13);
 		move_all(3.0f,1000,200   ,25,1000,200   ,236,13);
 		move_all(3.0f,1000,200   ,130-70,1000,200   ,236,13);
 		set_zhuashou_kai();
-	}else if(task == 0x02){
+	}else if(task == 0x02){   //green   2
 		move_all(-48.0f,1000,200   ,25,1000,200   ,135,13);
 		move_all(-48.0f,1000,200   ,25,1000,200   ,180,13);
 		move_all(-120.0f,1000,200   ,25,1000,200   ,278,13);
 		move_all(-50.0f,1000,200   ,130-70,1000,200   ,278,13);
 		set_zhuashou_kai();
-	}else if(task == 0x03){
+	}else if(task == 0x01){   //blue   1
 		move_all(-48.0f,1000,200   ,25,1000,200   ,135,13);
 		move_all(-48.0f,1000,200   ,25,1000,200   ,180,13);
 		move_all(-120.0f,1000,200   ,25,1000,200   ,317,13);
@@ -772,7 +343,7 @@ void transfer_position_wukuai(uint8_t task_choose,float distance,uint8_t color)
 //task_num 
 	//选择移动到对应颜色的位置 为零表示与颜色无关
 void transfer_position_sehuan(uint8_t fenbian_choose,uint8_t task_num)
-{   
+{
 	x_origin = (Serial_RxPacket[0]-0x30)*1000+(Serial_RxPacket[1]-0x30)*100+(Serial_RxPacket[2]-0x30)*10+(Serial_RxPacket[3]-0x30);
 	y_origin = (Serial_RxPacket[4]-0x30)*1000+(Serial_RxPacket[5]-0x30)*100+(Serial_RxPacket[6]-0x30)*10+(Serial_RxPacket[7]-0x30);
 	float x_center,y_center;//x加物块右移//y+物块下移
@@ -826,8 +397,8 @@ void transfer_position_sehuan(uint8_t fenbian_choose,uint8_t task_num)
 }
 
 void jixie_reset(void)
-{	
-	while(swith_out() == 1){		
+{
+	while(swith_out() == 1){
 		LED_Toggle2();
 		delay_ms1(50);
 	}
@@ -845,7 +416,7 @@ void jixie_reset(void)
 	则继续发送，直到收到信息，立刻退出
 */
 void wait_send_shumeipai(uint8_t message,uint16_t time)
-{	
+{
 	Serial_GetRxFlag();//清空标志位
 	Serial_SendByte(message);
 	while(1){
@@ -859,7 +430,7 @@ void wait_send_shumeipai(uint8_t message,uint16_t time)
 void TIM5_IRQHandler(void)
 {
 	if (TIM_GetITStatus(TIM5, TIM_IT_Update) == SET)
-	{   
+	{
 		imu_scan(fAcc, fGyro, fAngle);
 		TIM_ClearITPendingBit(TIM5, TIM_IT_Update);
 		OLED_ShowSignedNum(1,1,fAngle[2],3);
