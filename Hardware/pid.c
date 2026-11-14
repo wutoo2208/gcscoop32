@@ -17,7 +17,8 @@ float feedbackValue = 0; //这里获取到被控对象的反馈值
 float feedbackValue_pre = 0;
 float targetValue = 0; //这里获取到目标值
 float fAcc[3], fGyro[3], fAngle[3];
-int vx,vy,omiga,flag;
+int vx,vy,omiga;
+volatile int flag;
 uint32_t delay_time = 0;
 uint32_t real_time = 0;
 uint8_t dianji_move_flag = 0;

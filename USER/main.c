@@ -20,6 +20,9 @@
 #ifndef ENABLE_MISSION_AFTER_STARTUP
 #define ENABLE_MISSION_AFTER_STARTUP 0
 #endif
+#ifndef ENABLE_CHASSIS_ROUTE_TEST
+#define ENABLE_CHASSIS_ROUTE_TEST 0
+#endif
 
 //x减物块右移（从外侧往内看）//y+物块往地图内侧走
 #define  x_center_red       955
@@ -57,12 +60,142 @@ void wait_send_shumeipai(uint8_t message,uint16_t time);
 void clear_ckp(void);
 void jixie_reset(void);
 char message[] = "Hello, BT - 04 from STM32F407!\r\n";
+
+#if ENABLE_CHASSIS_ROUTE_TEST
+/** @brief 执行旧主流程中的固定底盘动作；PID 动作超时则立即返回失败。 */
+static uint8_t chassis_route_test_run(void)
+{
+    mypid.integral = 0.0f;
+    car_move2(150, 0, 150, 150);
+    car_move1(0, -530, 150, 200);
+    car_move1(0, -1000 + 90, 150, 200);
+    car_move2(-30, 0, 100, 100);
+
+    if (PID_move(-30, 0, 0, 400, 0, 1) == 0U) return 0U;
+    delay_ms1(200U);
+    car_move1(0, 400, 150, 200);
+    mypid.integral = 0.0f;
+    if (PID_move(0, 0, 0, 1000, 90, 0) == 0U) return 0U;
+    if (PID_move(0, 0, 0, 1000, 90, 3) == 0U) return 0U;
+    car_move1(0, -1700, 150, 250);
+    mypid.integral = 0.0f;
+    if (PID_move(0, 0, 0, 1000, -180, 0) == 0U) return 0U;
+    if (PID_move(0, 0, 0, 1000, -180, 3) == 0U) return 0U;
+    if (PID_move(0, 0, 0, 1000, -180.0f, 4) == 0U) return 0U;
+
+    if (PID_move(-30, 0, 0, 300, -180, 1) == 0U) return 0U;
+    if (PID_move(0, 0, 0, 500, -180, 3) == 0U) return 0U;
+    car_move1(140, 140 + 680, 180, 180);
+    delay_ms1(100U);
+    mypid.integral = 0.0f;
+    if (PID_move(0, 0, 0, 1000, 90, 0) == 0U) return 0U;
+    if (PID_move(0, 0, 0, 1000, 90, 3) == 0U) return 0U;
+    car_move1(140, 140 + 620, 180, 150);
+    if (PID_move(0, 0, 0, 1000, 90.0f, 4) == 0U) return 0U;
+
+    if (PID_move(-30, 0, 0, 300, 90, 1) == 0U) return 0U;
+    delay_ms1(100U);
+    car_move1(140, 220 + 650, 180, 180);
+    mypid.integral = 0.0f;
+    if (PID_move(0, 0, 0, 1000, 0, 0) == 0U) return 0U;
+    if (PID_move(0, 0, 0, 1000, 0, 3) == 0U) return 0U;
+    car_move1(140, 370 + 20, 180, 180);
+    if (PID_move(30, 0, 0, 300, 0, 1) == 0U) return 0U;
+    delay_ms1(100U);
+
+    if (PID_move(-30, 0, 0, 400, 0, 1) == 0U) return 0U;
+    delay_ms1(200U);
+    car_move1(0, 400, 150, 200);
+    mypid.integral = 0.0f;
+    if (PID_move(0, 0, 0, 1000, 90, 0) == 0U) return 0U;
+    if (PID_move(0, 0, 0, 1000, 90, 3) == 0U) return 0U;
+    car_move1(0, -1700, 150, 250);
+    mypid.integral = 0.0f;
+    if (PID_move(0, 0, 0, 1000, -180, 0) == 0U) return 0U;
+    if (PID_move(0, 0, 0, 1000, -180, 3) == 0U) return 0U;
+    if (PID_move(0, 0, 0, 1000, -180.0f, 4) == 0U) return 0U;
+
+    if (PID_move(-30, 0, 0, 300, -180, 1) == 0U) return 0U;
+    if (PID_move(0, 0, 0, 500, -180, 3) == 0U) return 0U;
+    car_move1(140, 140 + 680, 180, 180);
+    delay_ms1(100U);
+    mypid.integral = 0.0f;
+    if (PID_move(0, 0, 0, 1000, 90, 0) == 0U) return 0U;
+    if (PID_move(0, 0, 0, 1000, 90, 3) == 0U) return 0U;
+    car_move1(140, 140 + 620, 180, 150);
+    if (PID_move(-30, 0, 0, 300, 90, 1) == 0U) return 0U;
+    car_move1(140, 220 + 650, 180, 180);
+    mypid.integral = 0.0f;
+    if (PID_move(0, 0, 0, 1000, 0, 0) == 0U) return 0U;
+    if (PID_move(0, 0, 0, 1000, 0, 3) == 0U) return 0U;
+    car_move1(140, 2000 - 150, 180, 180);
+    car_move2(-130, 0, 150, 150);
+
+    return 1U;
+}
+#endif
+
 /**
- * @brief 初始化整机外设并执行启动流程；任务主体由 ENABLE_MISSION_AFTER_STARTUP 控制编译。
- * @note 进入 jixie_reset() 后会留在其前台循环中，该调用当前不会返回。
+ * @brief 初始化外设并根据编译宏执行底盘测试或赛项流程。
+ * @note jixie_reset() 会进入永久 IMU 循环，底盘测试分支需绕过该函数。
  */
 int main(void)
-{	
+{
+#if ENABLE_CHASSIS_ROUTE_TEST
+    delay_init(168);
+    board_init();
+    LED_Init();
+    Timer6_Init();
+    Swith_Init();
+    imu_init();
+    PIDInit();
+
+    while (swith_out() == 1U)
+    {
+        LED_Toggle2();
+        delay_ms1(50U);
+    }
+
+    if (WHT101_ANGLEZCali() != WIT_HAL_OK)
+    {
+        car_move(0, 0, 0);
+        while (1)
+        {
+            LED_Toggle2();
+            delay_ms1(100U);
+        }
+    }
+
+    dianji_move_flag = 1U;
+
+ /* Enable all wheel drivers before starting; do not wait for status polling. */
+    Emm_V5_En_Control(1U, true, false);
+    delay_ms1(10U);
+    Emm_V5_En_Control(2U, true, false);
+    delay_ms1(10U);
+    Emm_V5_En_Control(3U, true, false);
+    delay_ms1(10U);
+    Emm_V5_En_Control(4U, true, false);
+    delay_ms1(10U);
+
+    if (chassis_route_test_run() == 0U)
+    {
+        car_move(0, 0, 0);
+        while (1)
+        {
+            LED_Toggle2();
+            delay_ms1(100U);
+        }
+    }
+
+    car_move(0, 0, 0);
+    while (1)
+    {
+        delay_ms1(500U);
+        LED_Toggle2();
+    }
+#else
+
 /*
 	所有的中断：
 		1.OLED每隔500ms更新角度数据（最好不启用，里面耗时很长）（会影响delay函数的调用正确与否）
@@ -532,6 +665,7 @@ int main(void)
 	while(1){
         imu_process();
     }
+#endif
 #endif
 }
 

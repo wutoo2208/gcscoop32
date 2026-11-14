@@ -14,7 +14,7 @@ typedef struct
     float output, maxOutput; //Êä³ö¡¢Êä³öÏŞ·ù
 }PID;
 
-extern int flag;
+extern volatile int flag;
 extern PID mypid;
 extern uint8_t dianji_move_flag;
 extern uint8_t PID_control_flag;

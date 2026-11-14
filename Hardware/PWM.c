@@ -14,8 +14,8 @@ typedef struct {
     void (*SetServoAngle)(float angle);  // 设置当前角度的函数指针
 } Servo_t;
 
-Servo_t yuantai = {60.84f, 0.0f, 60.84f, 0, 0, 0, Servo_SetAngle4_yuntai};
-Servo_t zhuashou = {2.7f, 2.7f, 2.7f, 0, 0, 0, Servo_SetAngle2_zhuashou};
+Servo_t yuantai = {102.1f	,102.1f,102.1f, 0, 0, 0, Servo_SetAngle4_yuntai};
+Servo_t zhuashou = {60, 60, 60, 0, 0, 0, Servo_SetAngle2_zhuashou};
 Servo_t wukuaipingtai = {20.0f, 20.0f, 20.0f, 0, 0, 0,Servo_SetAngle3_wukuaipingtai};
 
 /** @brief 初始化 TIM2 的舵机 PWM 通道及周期更新中断。 */
@@ -74,9 +74,9 @@ void PWM_Init(void)
 	
 	/* TIM使能 */
 	TIM_Cmd(TIM2, ENABLE);			// 使能TIM2，定时器开始运行
-	TIM_SetCompare2(TIM2, 520);		// 抓手
+	TIM_SetCompare2(TIM2, 944);		// 抓手
 	TIM_SetCompare3(TIM2, 648);		// 物块平台
-	TIM_SetCompare4(TIM2, 838);		// 云台
+	TIM_SetCompare4(TIM2, 1067	);		// 云台
 	TIM_ITConfig(TIM2, TIM_IT_Update, ENABLE);
 }
 
@@ -170,12 +170,12 @@ void set_zhuashou_Angle(float target, float time){
     delay_ms1(30);
 }
 
-void set_zhuashou_he(void)
-{
-	set_zhuashou_Angle(6.0f,300);
-}	
-
 void set_zhuashou_kai(void)
+{
+	set_zhuashou_Angle(90.0f,300);
+}
+
+void set_zhuashou_he(void)
 {
 	set_zhuashou_Angle(45.0f,300);
 }	
@@ -196,7 +196,7 @@ void set_wukuaipingtai_Angle(float target, float time){
 
 /** @brief 按位置编号 1~3 将物块平台舵机转到对应放置位。 */
 void set_wukuaipingtai_weizhi(int pos)
-{	
+{
 	if(pos == 0x01){
 		set_wukuaipingtai_Angle(20.0f,300);
 	}else if(pos == 0x02){

@@ -1,4 +1,5 @@
 # Keil build outputs
+/OBJ/ChassisRouteTest/
 /OBJ/*.o
 /OBJ/*.d
 /OBJ/*.crf
